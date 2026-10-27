@@ -45,14 +45,14 @@ export const submitResponse = createServerFn({ method: "POST" })
     let assignedId: string | undefined;
     let contactName = data.name || undefined;
     const log = async (action: string, ok: boolean, detail?: string) => {
-      await supabaseAdmin.from("sync_events").insert({ org_id: s.org_id, provider: "bitrix24", action, ok, detail });
+      await supabaseAdmin.from("sync_events").insert({ org_id: s.org_id, provider: "bitrix24", action, ok, detail: detail ?? null });
     };
 
     if (webhook && data.entityType && data.entityId && data.entityType !== "contact") {
       try {
         const ent = await bitrixCall<Record<string, string>>(webhook, `crm.${data.entityType}.get`, { id: data.entityId });
-        assignedId = ent.ASSIGNED_BY_ID;
-        contactName ||= ent.TITLE || [ent.NAME, ent.LAST_NAME].filter(Boolean).join(" ") || undefined;
+        assignedId = ent["ASSIGNED_BY_ID"];
+        contactName ||= ent["TITLE"] || [ent["NAME"], ent["LAST_NAME"]].filter(Boolean).join(" ") || undefined;
         if (assignedId) {
           const users = await bitrixCall<Array<{ NAME?: string; LAST_NAME?: string }>>(webhook, "user.get", { ID: assignedId });
           const u = users?.[0];

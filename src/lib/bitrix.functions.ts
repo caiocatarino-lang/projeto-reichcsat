@@ -47,7 +47,7 @@ export const testBitrixEntity = createServerFn({ method: "POST" })
       const ent = await bitrixCall<Record<string, string>>(webhook, `crm.${data.type}.get`, { id: data.id });
       await supabaseAdmin.from("sync_events").insert({ org_id: orgId, provider: "bitrix24", action: `teste crm.${data.type}.get`, ok: true, detail: `#${data.id}` });
       await supabaseAdmin.from("integrations").update({ last_sync_at: new Date().toISOString(), last_error: null }).eq("id", integ!.id);
-      return { title: ent.TITLE || [ent.NAME, ent.LAST_NAME].filter(Boolean).join(" "), assigned: ent.ASSIGNED_BY_ID, stage: ent.STAGE_ID || ent.STATUS_ID };
+      return { title: ent["TITLE"] || [ent["NAME"], ent["LAST_NAME"]].filter(Boolean).join(" "), assigned: ent["ASSIGNED_BY_ID"], stage: ent["STAGE_ID"] || ent["STATUS_ID"] };
     } catch (e) {
       await supabaseAdmin.from("sync_events").insert({ org_id: orgId, provider: "bitrix24", action: `teste crm.${data.type}.get`, ok: false, detail: (e as Error).message });
       throw e;
