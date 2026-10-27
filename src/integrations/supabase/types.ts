@@ -14,16 +14,365 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cases: {
+        Row: {
+          assignee: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          org_id: string
+          response_id: string
+          status: Database["public"]["Enums"]["case_status"]
+          updated_at: string
+        }
+        Insert: {
+          assignee?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          org_id: string
+          response_id: string
+          status?: Database["public"]["Enums"]["case_status"]
+          updated_at?: string
+        }
+        Update: {
+          assignee?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          org_id?: string
+          response_id?: string
+          status?: Database["public"]["Enums"]["case_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: true
+            referencedRelation: "responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_secrets: {
+        Row: {
+          integration_id: string
+          webhook_url: string
+        }
+        Insert: {
+          integration_id: string
+          webhook_url: string
+        }
+        Update: {
+          integration_id?: string
+          webhook_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_secrets_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: true
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          create_tasks: boolean
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          org_id: string
+          portal: string | null
+          post_timeline: boolean
+          provider: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          create_tasks?: boolean
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          org_id: string
+          portal?: string | null
+          post_timeline?: boolean
+          provider: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          create_tasks?: boolean
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          org_id?: string
+          portal?: string | null
+          post_timeline?: boolean
+          provider?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memberships: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          org_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          org_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      responses: {
+        Row: {
+          bitrix_entity_id: string | null
+          bitrix_entity_type: string | null
+          bitrix_synced: boolean
+          channel: string
+          comment: string | null
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          is_negative: boolean
+          org_id: string
+          responsible: string | null
+          score: number
+          service_type: string | null
+          survey_id: string
+          survey_type: Database["public"]["Enums"]["survey_type"]
+        }
+        Insert: {
+          bitrix_entity_id?: string | null
+          bitrix_entity_type?: string | null
+          bitrix_synced?: boolean
+          channel?: string
+          comment?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          is_negative?: boolean
+          org_id: string
+          responsible?: string | null
+          score: number
+          service_type?: string | null
+          survey_id: string
+          survey_type: Database["public"]["Enums"]["survey_type"]
+        }
+        Update: {
+          bitrix_entity_id?: string | null
+          bitrix_entity_type?: string | null
+          bitrix_synced?: boolean
+          channel?: string
+          comment?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          is_negative?: boolean
+          org_id?: string
+          responsible?: string | null
+          score?: number
+          service_type?: string | null
+          survey_id?: string
+          survey_type?: Database["public"]["Enums"]["survey_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "responses_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responses_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surveys: {
+        Row: {
+          comment_prompt: string
+          created_at: string
+          created_by: string | null
+          csat_scale: number
+          csat_threshold: number
+          id: string
+          name: string
+          org_id: string
+          public_token: string
+          question: string
+          service_type: string | null
+          status: Database["public"]["Enums"]["survey_status"]
+          thank_you: string
+          type: Database["public"]["Enums"]["survey_type"]
+          updated_at: string
+        }
+        Insert: {
+          comment_prompt?: string
+          created_at?: string
+          created_by?: string | null
+          csat_scale?: number
+          csat_threshold?: number
+          id?: string
+          name: string
+          org_id: string
+          public_token?: string
+          question: string
+          service_type?: string | null
+          status?: Database["public"]["Enums"]["survey_status"]
+          thank_you?: string
+          type: Database["public"]["Enums"]["survey_type"]
+          updated_at?: string
+        }
+        Update: {
+          comment_prompt?: string
+          created_at?: string
+          created_by?: string | null
+          csat_scale?: number
+          csat_threshold?: number
+          id?: string
+          name?: string
+          org_id?: string
+          public_token?: string
+          question?: string
+          service_type?: string | null
+          status?: Database["public"]["Enums"]["survey_status"]
+          thank_you?: string
+          type?: Database["public"]["Enums"]["survey_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surveys_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_events: {
+        Row: {
+          action: string
+          created_at: string
+          detail: string | null
+          id: string
+          ok: boolean
+          org_id: string
+          provider: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          ok: boolean
+          org_id: string
+          provider: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          ok?: boolean
+          org_id?: string
+          provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_org_role: {
+        Args: { _org: string; _role: Database["public"]["Enums"]["org_role"] }
+        Returns: boolean
+      }
+      is_member: { Args: { _org: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      case_status: "open" | "in_progress" | "resolved"
+      org_role: "admin" | "manager" | "agent"
+      survey_status: "draft" | "active" | "archived"
+      survey_type: "nps" | "csat"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +499,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      case_status: ["open", "in_progress", "resolved"],
+      org_role: ["admin", "manager", "agent"],
+      survey_status: ["draft", "active", "archived"],
+      survey_type: ["nps", "csat"],
+    },
   },
 } as const
