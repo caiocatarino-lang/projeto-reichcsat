@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { pageHead } from "@/lib/workspace";
 
 export const Route = createFileRoute("/_authenticated/cases")({
-  head: () => ({ meta: [{ title: "Tratativas — ReichCsat" }] }),
+  head: () => pageHead("Tratativas", "Acompanhe a recuperação de clientes e suas avaliações negativas."),
   component: Page,
 });
 

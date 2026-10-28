@@ -1,15 +1,43 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, type SearchSchemaInput } from "@tanstack/react-router";
+import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { Plus, Search, ClipboardList, Pencil, Copy, Eye, Archive, Play, FileEdit } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { workspaceQuery, pageHead } from "@/lib/workspace";
+import { WorkspaceError, WorkspacePending } from "@/components/workspace-states";
+import { SurveyEditor, SurveyPreview } from "@/components/surveys/survey-editor";
+import { newSurvey, canManageSurveys, surveyStatusLabel, type SurveyInput } from "@/lib/survey-schema";
+import { setSurveyStatus } from "@/lib/workspace.functions";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/surveys")({
-  head: () => ({ meta: [{ title: "Pesquisas — ReichCsat" }] }),
-  component: Page,
+  validateSearch: (search: Record<string, unknown> & SearchSchemaInput) => ({ q: typeof search["q"] === "string" ? search["q"] : "", status: ["draft", "active", "archived"].includes(String(search["status"])) ? String(search["status"]) : "all", type: ["nps", "csat"].includes(String(search["type"])) ? String(search["type"]) : "all" }),
+  loader: async ({ context }) => { await context.queryClient.ensureQueryData(workspaceQuery); },
+  head: () => pageHead("Pesquisas", "Crie e acompanhe as pesquisas NPS e CSAT da sua organização."),
+  component: Page, errorComponent: WorkspaceError, pendingComponent: WorkspacePending, notFoundComponent: () => <p>Pesquisas não encontradas.</p>,
 });
-
+const asInput = (s: Tables<"surveys">): SurveyInput => ({ id: s.id, type: s.type, name: s.name, question: s.question, comment_prompt: s.comment_prompt, thank_you: s.thank_you, service_type: s.service_type ?? "", csat_scale: s.csat_scale, csat_threshold: s.csat_threshold });
 function Page() {
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold">Pesquisas</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Esta área ainda está em construção.</p>
-    </div>
-  );
+  const { data } = useSuspenseQuery(workspaceQuery);
+  const search = Route.useSearch(); const navigate = Route.useNavigate(); const qc = useQueryClient();
+  const [editor, setEditor] = useState<SurveyInput | null>(null); const [preview, setPreview] = useState<SurveyInput | null>(null);
+  const [confirm, setConfirm] = useState<{ id: string; status: "draft" | "active" | "archived" } | null>(null);
+  const manage = canManageSurveys(data.membership.role);
+  const statusFn = useServerFn(setSurveyStatus);
+  const mutation = useMutation({ mutationFn: (value: { id: string; status: "draft" | "active" | "archived" }) => statusFn({ data: value }), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["workspace"] }); setConfirm(null); toast.success("Status atualizado"); }, onError: (e) => toast.error(e.message) });
+  const rows = data.surveys.filter((s) => s.name.toLowerCase().includes(search["q"].toLowerCase()) && (search["status"] === "all" || s.status === search["status"]) && (search["type"] === "all" || s.type === search["type"])).reverse();
+  const update = (value: Partial<typeof search>) => navigate({ search: (prev) => ({ ...prev, ...value }), replace: true });
+  return <div className="space-y-8"><header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase text-primary">ReichCsat / Pesquisas</p><h1 className="mt-2 text-3xl font-semibold">Pesquisas</h1></div>{manage && <Button onClick={() => setEditor({ ...newSurvey })}><Plus />Nova pesquisa</Button>}</header>
+    <div className="grid grid-cols-3 divide-x border-y py-5">{(["active", "draft", "archived"] as const).map((status) => <div key={status} className="px-4 first:pl-0"><p className="text-2xl font-semibold tabular-nums">{data.surveys.filter((s) => s.status === status).length}</p><p className="mt-1 text-xs text-muted-foreground">{status === "active" ? "Ativas" : status === "draft" ? "Rascunhos" : "Arquivadas"}</p></div>)}</div>
+    <div className="flex flex-wrap gap-3"><div className="relative min-w-48 flex-1"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input aria-label="Buscar pesquisas" placeholder="Buscar pesquisas" className="pl-9" value={search["q"]} onChange={(e) => void update({ q: e.target.value })} /></div><Select value={search["status"]} onValueChange={(status) => void update({ status })}><SelectTrigger className="w-40" aria-label="Status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os status</SelectItem>{Object.entries(surveyStatusLabel).map(([v, label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent></Select><Select value={search["type"]} onValueChange={(type) => void update({ type })}><SelectTrigger className="w-36" aria-label="Filtrar tipo"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os tipos</SelectItem><SelectItem value="nps">NPS</SelectItem><SelectItem value="csat">CSAT</SelectItem></SelectContent></Select></div>
+    {!rows.length ? <div className="border-y py-16 text-center"><ClipboardList className="mx-auto size-10 text-primary" /><h2 className="mt-5 text-xl font-semibold">{data.surveys.length ? "Nenhuma pesquisa encontrada" : "Sua primeira pesquisa começa aqui"}</h2>{manage && !data.surveys.length && <Button variant="outline" className="mt-6" onClick={() => setEditor({ ...newSurvey })}><Plus />Criar pesquisa</Button>}</div> : <div className="grid gap-4 lg:grid-cols-2">{rows.map((s) => <article key={s.id} className="flex min-w-0 flex-col rounded-lg border bg-card p-5"><div className="flex items-center justify-between gap-3"><span className="text-xs font-bold text-primary">{s.type.toUpperCase()}</span><span className={`text-xs ${s.status === "active" ? "text-success" : "text-muted-foreground"}`}>{surveyStatusLabel[s.status]}</span></div><h2 className="mt-4 break-words text-lg font-semibold">{s.name}</h2><p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{s.question}</p><div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground"><span>{data.responses.filter((r) => r.survey_id === s.id).length} respostas</span><span>{s.service_type || "Sem categoria"}</span><span>{new Date(s.created_at).toLocaleDateString("pt-BR")}</span></div><div className="mt-auto flex flex-wrap items-center gap-1 border-t pt-4 mt-5"><Button variant="ghost" size="icon" aria-label={`Prévia de ${s.name}`} title="Prévia" onClick={() => setPreview(asInput(s))}><Eye /></Button>{manage && <><Button variant="ghost" size="icon" aria-label={`Editar ${s.name}`} title="Editar" onClick={() => setEditor(asInput(s))}><Pencil /></Button><Button variant="ghost" size="icon" aria-label={`Duplicar ${s.name}`} title="Duplicar" onClick={() => setEditor({ ...asInput(s), id: undefined, name: `${s.name.slice(0, 150)} (cópia)` })}><Copy /></Button><div className="ml-auto flex gap-1">{s.status !== "active" && <Button variant="secondary" size="sm" onClick={() => setConfirm({ id: s.id, status: "active" })}><Play />Ativar</Button>}{s.status === "active" && <Button variant="ghost" size="icon" title="Voltar a rascunho" aria-label={`Pausar ${s.name}`} onClick={() => setConfirm({ id: s.id, status: "draft" })}><FileEdit /></Button>}{s.status !== "archived" && <Button variant="ghost" size="icon" title="Arquivar" aria-label={`Arquivar ${s.name}`} onClick={() => setConfirm({ id: s.id, status: "archived" })}><Archive /></Button>}</div></>}</div></article>)}</div>}
+    {editor && <SurveyEditor initial={editor} locked={Boolean(editor.id && data.responses.some((r) => r.survey_id === editor.id))} close={() => setEditor(null)} />}
+    <Dialog open={Boolean(preview)} onOpenChange={(open) => { if (!open) setPreview(null); }}><DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto"><DialogHeader><DialogTitle>{preview?.name}</DialogTitle><DialogDescription>Prévia · nenhuma resposta será registrada</DialogDescription></DialogHeader>{preview && <SurveyPreview key={preview.id} survey={preview} />}</DialogContent></Dialog>
+    <Dialog open={Boolean(confirm)} onOpenChange={(open) => { if (!open && !mutation.isPending) setConfirm(null); }}><DialogContent><DialogHeader><DialogTitle>{confirm?.status === "active" ? "Ativar pesquisa?" : confirm?.status === "archived" ? "Arquivar pesquisa?" : "Voltar a rascunho?"}</DialogTitle><DialogDescription>{confirm?.status === "active" ? "A pesquisa ficará ativa. A página pública de respostas ainda não está disponível nesta entrega." : "Novas respostas serão desativadas. As respostas existentes serão preservadas."}</DialogDescription></DialogHeader><div className="flex justify-end gap-2"><Button variant="outline" disabled={mutation.isPending} onClick={() => setConfirm(null)}>Cancelar</Button><Button disabled={mutation.isPending} onClick={() => { if (confirm) mutation.mutate(confirm); }}>{mutation.isPending ? "Salvando…" : "Confirmar"}</Button></div></DialogContent></Dialog>
+  </div>;
 }
