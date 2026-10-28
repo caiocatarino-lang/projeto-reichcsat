@@ -93,12 +93,32 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-    });
-    return () => data.subscription.unsubscribe();
+    let unsubscribe: (() => void) | undefined;
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+      const { data } = supabase.auth.onAuthStateChange((event) => {
+        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+
+        // Do not start router/query work while Supabase still holds its auth lock.
+        if (refreshTimer !== undefined) clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => {
+          refreshTimer = undefined;
+          void router.invalidate();
+          if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
+        }, 0);
+      });
+
+      unsubscribe = () => {
+        if (refreshTimer !== undefined) clearTimeout(refreshTimer);
+        data.subscription.unsubscribe();
+      };
+    } catch (error) {
+      // Public pages should remain usable if Auth is not configured or reachable.
+      console.error("[Supabase] Auth listener could not be initialized.", error);
+    }
+
+    return () => unsubscribe?.();
   }, [router, queryClient]);
 
   return (
