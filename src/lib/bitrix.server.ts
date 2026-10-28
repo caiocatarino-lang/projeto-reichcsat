@@ -18,6 +18,7 @@ export function normalizeWebhook(url: string) {
 export async function bitrixCall<T = unknown>(webhook: string, method: string, params: Record<string, unknown> = {}): Promise<T> {
   const res = await fetch(`${webhook}${method}.json`, {
     method: "POST",
+    redirect: "error",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
