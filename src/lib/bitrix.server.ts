@@ -1,5 +1,5 @@
 // Server-only Bitrix24 helpers. Do not expose webhook URLs to the browser.
-const BITRIX24_CLOUD_HOST = /^(?:[a-z0-9-]+\.)*bitrix24\.(?:com(?:\.[a-z]{2})?|ru|de|fr|es|it|pl|ua|kz|by|eu|cn|jp|in|tr|vn|id|my|th|tw|sg|mx|co|ar|cl|pe|ve|za)$/i;
+const BITRIX24_CLOUD_HOST = /^(?:[a-z0-9-]+\.)*bitrix24\.(?:com(?:\.(?:br|tr|mx|au|ar|co|cl|pe|ve|za))?|ru|de|fr|es|it|pl|ua|kz|by|eu|cn|jp|in|tr|vn|id|my|th|tw|sg|mx|co|ar|cl|pe|ve|za)$/i;
 
 export function normalizeWebhook(url: string) {
   const u = new URL(url.trim());
