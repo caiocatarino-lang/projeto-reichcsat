@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { BarChart3, ClipboardList, MessageSquareText, LifeBuoy, Plug, Settings, LogOut } from "lucide-react";
+import { BarChart3, ClipboardList, MessageSquareText, LifeBuoy, Plug, Settings, LogOut, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMembership, roleLabel } from "@/lib/org";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ const nav = [
   { to: "/cases", label: "Tratativas", icon: LifeBuoy },
   { to: "/integrations", label: "Integrações", icon: Plug },
   { to: "/settings", label: "Configurações", icon: Settings },
+  { to: "/help", label: "Central de ajuda", icon: BookOpen },
 ] as const;
 
 function Shell() {
