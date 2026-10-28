@@ -25,7 +25,7 @@ const scoreLabel = (response: Tables<"responses">) => response.survey_type === "
 function csvCell(value: unknown): string {
   const raw = String(value ?? "");
   // Prevent spreadsheet formula execution from untrusted survey content.
-  const safe = /^[\\t\\r ]*[=+@-]/.test(raw) ? "'" + raw : raw;
+  const safe = /^[=+@-]/.test(raw.trimStart()) ? "'" + raw : raw;
   return '"' + safe.replace(/"/g, '""') + '"';
 }
 
