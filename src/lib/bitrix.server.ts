@@ -16,7 +16,9 @@ export function normalizeWebhook(url: string) {
 }
 
 export async function bitrixCall<T = unknown>(webhook: string, method: string, params: Record<string, unknown> = {}): Promise<T> {
-  const res = await fetch(`${webhook}${method}.json`, {
+  // Re-validate on every call in case a legacy or corrupted secret exists in storage.
+  const safeWebhook = normalizeWebhook(webhook);
+  const res = await fetch(`${safeWebhook}${method}.json`, {
     method: "POST",
     redirect: "error",
     headers: { "Content-Type": "application/json" },
