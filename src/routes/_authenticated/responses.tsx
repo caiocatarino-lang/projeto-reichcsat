@@ -23,7 +23,10 @@ const dateLabel = (value: string) => new Date(value).toLocaleString("pt-BR", { d
 const scoreLabel = (response: Tables<"responses">) => response.survey_type === "nps" ? "NPS" : "CSAT";
 
 function csvCell(value: unknown): string {
-  return '"' + String(value ?? "").replace(/"/g, '""') + '"';
+  const raw = String(value ?? "");
+  // Prevent spreadsheet formula execution from untrusted survey content.
+  const safe = /^[\\t\\r ]*[=+@-]/.test(raw) ? "'" + raw : raw;
+  return '"' + safe.replace(/"/g, '""') + '"';
 }
 
 function downloadCsv(rows: Tables<"responses">[], surveyNames: Map<string, string>) {
