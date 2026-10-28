@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function requireAdmin(supabase: any, userId: string) {
+async function requireAdmin(supabase: SupabaseClient<Database>, userId: string) {
   const { data } = await supabase.from("memberships").select("org_id,role").eq("user_id", userId).limit(1).single();
   if (!data || data.role !== "admin") throw new Error("Apenas administradores podem alterar integrações");
   return data.org_id as string;
