@@ -185,7 +185,7 @@ function AuthPage() {
                 <div className="space-y-1.5"><Label htmlFor="c">Empresa</Label><Input id="c" required value={company} onChange={(e) => setCompany(e.target.value)} /></div>
               )}
               <div className="space-y-1.5"><Label htmlFor="e">E-mail</Label><Input id="e" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label htmlFor="p">Senha</Label><Input id="p" type="password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label htmlFor="p">Senha</Label><Input id="p" type="password" minLength={mode === "up" ? 8 : undefined} required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
               <Button type="submit" className="w-full" disabled={busy}>{mode === "in" ? "Entrar" : "Criar conta"}</Button>
             </form>
             <Button variant="secondary" className="mt-3 w-full" onClick={google} disabled={busy}>Continuar com Google</Button>
