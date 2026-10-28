@@ -110,3 +110,31 @@ export const updateCase = createServerFn({ method: "POST" })
     if (error || !updated) throw new Error("Não foi possível atualizar a tratativa. Verifique suas permissões.");
     return updated;
   });
+
+export const updateOrganizationName = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({
+    name: z.string().trim().min(1, "Informe o nome da organização.").max(120),
+  }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: membership, error: membershipError } = await context.supabase
+      .from("memberships")
+      .select("org_id,role")
+      .eq("user_id", context.userId)
+      .order("created_at")
+      .limit(1)
+      .single();
+
+    if (membershipError || !membership) throw new Error("Não foi possível validar sua organização.");
+    if (membership.role !== "admin") throw new Error("Somente administradores podem alterar o nome da organização.");
+
+    const { data: updated, error } = await context.supabase
+      .from("organizations")
+      .update({ name: data.name })
+      .eq("id", membership.org_id)
+      .select("id")
+      .single();
+
+    if (error || !updated) throw new Error("Não foi possível salvar o nome da organização.");
+    return { ok: true };
+  });
