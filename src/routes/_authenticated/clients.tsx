@@ -20,6 +20,7 @@ type ClientGroup = {
   latestAt: string;
   latestScore: number;
   hasNegative: boolean;
+  latestNegative: boolean;
   negativeCount: number;
 };
 
@@ -70,6 +71,7 @@ function Page() {
         latestAt: latest.created_at,
         latestScore: latest.score,
         hasNegative: negativeCount > 0,
+        latestNegative: latest.is_negative,
         negativeCount,
       };
     }).sort((a, b) => b.latestAt.localeCompare(a.latestAt));
@@ -156,7 +158,7 @@ function Page() {
                   </TableCell>
                   <TableCell className="tabular-nums">{client.responses.length}</TableCell>
                   <TableCell>
-                    <span className={client.hasNegative ? "font-semibold text-destructive" : "font-semibold"}>{client.latestScore}</span>
+                    <span className={client.latestNegative ? "font-semibold text-destructive" : "font-semibold"}>{client.latestScore}</span>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">{dateLabel(client.latestAt)}</TableCell>
                   <TableCell>
