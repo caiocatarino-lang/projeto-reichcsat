@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { pageHead } from "@/lib/workspace";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Configurações — ReichCsat" }] }),
+  head: () => pageHead("Configurações", "Gerencie sua organização e equipe no ReichCsat."),
   component: Page,
 });
 

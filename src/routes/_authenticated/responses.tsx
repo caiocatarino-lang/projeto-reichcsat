@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { pageHead } from "@/lib/workspace";
 
 export const Route = createFileRoute("/_authenticated/responses")({
-  head: () => ({ meta: [{ title: "Respostas — ReichCsat" }] }),
+  head: () => pageHead("Respostas", "Consulte as avaliações NPS e CSAT dos seus clientes."),
   component: Page,
 });
 

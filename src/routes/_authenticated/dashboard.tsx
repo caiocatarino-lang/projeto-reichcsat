@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, type SearchSchemaInput } from "@tanstack/react-router";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Activity, MessageSquareText, Heart, TriangleAlert, Plus, RefreshCw, ArrowUpRight, BarChart3 } from "lucide-react";
@@ -11,7 +11,7 @@ import { WorkspaceError, WorkspacePending } from "@/components/workspace-states"
 import { aggregateResponses, filterResponses, type DashboardFilters } from "@/lib/dashboard-data";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  validateSearch: (search: Record<string, unknown>): DashboardFilters => ({ period: search.period === "7" || search.period === "90" || search.period === "all" ? search.period : "30", responsible: typeof search.responsible === "string" ? search.responsible : "all", service: typeof search.service === "string" ? search.service : "all" }),
+  validateSearch: (search: Record<string, unknown> & SearchSchemaInput): DashboardFilters => ({ period: search["period"] === "7" || search["period"] === "90" || search["period"] === "all" ? search["period"] : "30", responsible: typeof search["responsible"] === "string" ? search["responsible"] : "all", service: typeof search["service"] === "string" ? search["service"] : "all" }),
   loader: async ({ context }) => { await context.queryClient.ensureQueryData(workspaceQuery); },
   head: () => pageHead("Painel", "Acompanhe NPS, CSAT e avaliações dos clientes da sua organização."),
   component: Page, errorComponent: WorkspaceError, pendingComponent: WorkspacePending, notFoundComponent: () => <p>Painel não encontrado.</p>,
