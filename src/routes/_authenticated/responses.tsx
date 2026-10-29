@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { queryOptions, useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Activity, BarChart3, CalendarDays, Check, CircleHelp, Eye, Filter, MessageSquareText,
+  Activity, BarChart3, CalendarDays, CircleHelp, Eye, Filter, MessageSquareText,
   RefreshCw, Search, SlidersHorizontal, Sparkles, Target, TrendingDown, TrendingUp, Users,
 } from 'lucide-react';
 import {
@@ -29,13 +29,6 @@ const analyticsOptions=(filters:ReturnType<typeof filterSchema.parse>)=>queryOpt
   queryFn:()=>getResponseAnalytics({data:filters}),
 });
 const number=(value:number|null, suffix='')=>value===null?'—':`${value.toLocaleString('pt-BR')}${suffix}`;
-const channelColors:Record<string,string>={
-  WhatsApp:'var(--color-whatsapp)',
-  'E-mail':'var(--color-email)',
-  SMS:'var(--color-sms)',
-  'Link público':'var(--color-publicLink)',
-};
-
 export const Route=createFileRoute('/_authenticated/responses')({
   validateSearch:(s)=>filterSchema.parse(s),
   loaderDeps:({search})=>search,
@@ -76,7 +69,6 @@ function Page(){
     search:{page:1,period:'all',q:'',month:undefined,survey:undefined,type:undefined,channel:undefined,sentiment:undefined,min:undefined,max:undefined,status:undefined},
   });
   const isFiltered=Boolean(filters.survey||filters.type||filters.channel||filters.sentiment||filters.month||filters.min!==undefined||filters.max!==undefined||filters.q||(filters.period!=='30'));
-  const chartEmpty=analytics.total===0;
   const sentimentData=[
     {name:'Promotores',value:analytics.nps.promoters,fill:'var(--color-promoters)'},
     {name:'Neutros',value:analytics.nps.passives,fill:'var(--color-passives)'},
