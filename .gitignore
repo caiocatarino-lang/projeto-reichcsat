@@ -31,7 +31,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment variables and local secrets
-.env
+# Environment overrides: only the root .env may contain public VITE_* Supabase settings for Lovable.
+# Never place private credentials in the root .env; local overrides stay ignored.
 .env.*
 !.env.example
