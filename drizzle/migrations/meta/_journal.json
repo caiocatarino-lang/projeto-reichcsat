@@ -36,6 +36,13 @@
       "when": 1793295000000,
       "tag": "0004_case_ai_briefing",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793298000000,
+      "tag": "0005_ai_provider_configs",
+      "breakpoints": true
     }
   ]
 }
