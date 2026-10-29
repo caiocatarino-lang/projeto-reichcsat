@@ -262,6 +262,7 @@ export type Database = {
           comment_prompt: string
           created_at: string
           created_by: string | null
+          delivery_channels: Json
           csat_scale: number
           csat_threshold: number
           id: string
@@ -279,6 +280,7 @@ export type Database = {
           comment_prompt?: string
           created_at?: string
           created_by?: string | null
+          delivery_channels?: Json
           csat_scale?: number
           csat_threshold?: number
           id?: string
@@ -296,6 +298,7 @@ export type Database = {
           comment_prompt?: string
           created_at?: string
           created_by?: string | null
+          delivery_channels?: Json
           csat_scale?: number
           csat_threshold?: number
           id?: string
