@@ -10,6 +10,8 @@ export const membershipQuery = queryOptions({
       .from("memberships")
       .select("org_id, role, email, organizations(name)")
       .eq("user_id", u.user.id)
+      .order("created_at")
+      .order("id")
       .limit(1)
       .single();
     if (error) throw error;
