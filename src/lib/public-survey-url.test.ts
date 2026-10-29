@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { makePublicSurveyPath, parsePublicSurveySlug, slugifySurveyName } from "./public-survey-url";
 
-const token = "a1b2c3d4e5f60718293a4b5c";
+const publicId = "a1b2c3d4e5f60718";
 
 describe("branded public survey URL", () => {
   it("turns survey names into readable URL slugs", () => {
@@ -9,24 +9,24 @@ describe("branded public survey URL", () => {
   });
 
   it("builds a named path with no query string", () => {
-    const path = makePublicSurveyPath("Pesquisa de Satisfação", token);
-    expect(path).toBe(`/pesquisa/pesquisa-de-satisfacao-${token}`);
+    const path = makePublicSurveyPath("Pesquisa de Satisfação", publicId);
+    expect(path).toBe(`/pesquisa/pesquisa-de-satisfacao-${publicId}`);
     expect(path).not.toContain("?");
   });
 
   it.each(["whatsapp", "sms", "email"] as const)("encodes %s in the path instead of a query parameter", (channel) => {
-    const path = makePublicSurveyPath("Pós atendimento", token, channel);
-    expect(path).toBe(`/pesquisa/pos-atendimento-${token}-${channel}`);
+    const path = makePublicSurveyPath("Pós atendimento", publicId, channel);
+    expect(path).toBe(`/pesquisa/pos-atendimento-${publicId}-${channel}`);
     expect(path).not.toContain("?");
-    expect(parsePublicSurveySlug(path.split("/").at(-1) ?? "")).toEqual({ token, channel });
+    expect(parsePublicSurveySlug(path.split("/").at(-1) ?? "")).toEqual({ publicId, channel });
   });
 
   it("returns the default channel when no suffix is present", () => {
-    expect(parsePublicSurveySlug(`pesquisa-${token}`)).toEqual({ token, channel: "link" });
+    expect(parsePublicSurveySlug(`pesquisa-${publicId}`)).toEqual({ publicId, channel: "link" });
   });
 
   it("rejects malformed or incomplete identifiers", () => {
-    expect(parsePublicSurveySlug("pesquisa-sem-token")).toBeNull();
-    expect(() => makePublicSurveyPath("Pesquisa", "token-invalido")).toThrow("Token público inválido");
+    expect(parsePublicSurveySlug("pesquisa-sem-publicId")).toBeNull();
+    expect(() => makePublicSurveyPath("Pesquisa", "publicId-invalido")).toThrow("Identificador público inválido");
   });
 });
