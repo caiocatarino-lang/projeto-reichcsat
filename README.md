@@ -29,9 +29,9 @@ bun run build
 
 ## Comentários por áudio nas pesquisas públicas
 
-Na pesquisa pública, o respondente pode gravar até 60 segundos de áudio, ouvir a gravação e solicitar a transcrição para preencher o campo de comentário. O texto é adicionado ao campo editável para revisão antes do envio. O áudio é mantido temporariamente no navegador e enviado ao endpoint do servidor para transcrição; ele não é salvo em tabelas nem em Storage do REICHCSAT.
+Na pesquisa pública, o respondente pode gravar até 60 segundos de áudio, ouvir a gravação e solicitar a transcrição para preencher o campo de comentário. O texto é adicionado ao campo editável para revisão antes do envio. O áudio é mantido temporariamente no navegador e enviado ao provedor de IA escolhido na área **Integrações**; ele não é salvo em tabelas nem em Storage do REICHCSAT.
 
-A transcrição utiliza a OpenAI Audio Transcriptions API com o modelo `gpt-transcribe`, em português. Configure `OPENAI_API_KEY` como segredo exclusivamente no ambiente do servidor/Lovable Cloud. Sem essa chave configurada, o fluxo textual da pesquisa continua disponível, mas a transcrição retorna uma mensagem informativa. O áudio é limitado a 8 MB e o endpoint aplica validações de formato, pesquisa ativa, origem da requisição e limite temporário de uso.
+A transcrição funciona com o provedor OpenAI (`gpt-transcribe`) ou Google Gemini (modelo multimodal configurado). A chave é informada no painel autenticado de Integrações, validada e armazenada criptografada pelo servidor. O cliente da pesquisa não vê a chave. O áudio é limitado a 8 MB e o endpoint aplica validações de formato, pesquisa ativa, origem da requisição e limite temporário de uso.
 
 Antes de enviar a resposta, o cliente deve revisar a transcrição porque nomes próprios, siglas e ruído podem produzir erros. A gravação só é enviada ao serviço de transcrição quando o respondente aciona o botão específico; ela não é anexada à resposta final.
 
@@ -39,11 +39,11 @@ Antes de enviar a resposta, o cliente deve revisar a transcrição porque nomes 
 
 A área de Tratativas apresenta a nota e o comentário original e pode gerar um briefing estruturado de recuperação: resumo, problema principal, necessidade provável, sinais de sentimento no texto, urgência sugerida, abordagem, frase de abertura, próximos passos e pontos a evitar. O briefing é salvo em `cases.ai_briefing` e permanece vinculado à tratativa.
 
-A geração usa a OpenAI Responses API no servidor, com `store: false`. O modelo recebe apenas a nota, tipo de pesquisa, canal, tipo de atendimento, nome da pesquisa e comentário com e-mails/telefones ocultados. Nome e e-mail do contato não são enviados no pedido à IA. A saída é validada no servidor e a chave nunca deve ser exposta no navegador.
+O provedor pode ser configurado por organização em **Integrações**: OpenAI ou Google Gemini. O formulário valida os modelos de análise e transcrição antes de salvar. As chaves de API são criptografadas com AES-256-GCM usando uma chave derivada de um segredo exclusivo do servidor e nunca são retornadas ao navegador. A tabela de configuração possui RLS ativado e não concede acesso direto a `anon` ou `authenticated`; operações passam por funções de servidor que validam o papel de administrador.
 
-**Configuração necessária:** definir `OPENAI_API_KEY` como segredo de servidor em Lovable Cloud. Opcionalmente, definir `OPENAI_MODEL`; por padrão é usado `gpt-6-luna`. Sem a chave, o painel informa que a IA não está configurada e a geração não funciona ainda. O consumo da API pode gerar custos à conta do provedor.
+O modelo recebe apenas os dados necessários à análise, com e-mails e telefones reconhecidos no comentário ocultados. Nome e e-mail do contato não são enviados separadamente. A saída é validada pelo servidor antes de ser salva. A análise é assistiva e descreve somente sinais presentes no comentário; o colaborador deve confirmar a causa com o cliente antes de assumir fatos ou prometer prazos.
 
-A análise é assistiva e descreve somente sinais presentes no comentário; o colaborador deve confirmar a causa com o cliente antes de assumir fatos ou prometer prazos. A IA não deve ser usada para inferir características psicológicas ou sensíveis do cliente.
+**Configuração:** abra Integrações, escolha OpenAI ou Google Gemini, informe uma chave de API válida e os identificadores dos modelos e clique em **Validar e salvar conexão**. A chave não deve ser colocada em arquivos versionados, variáveis `VITE_*` ou mensagens. A troca da chave-mestra do servidor (`SUPABASE_SERVICE_ROLE_KEY`) impede a descriptografia de chaves já armazenadas; nesse caso, salve novamente a credencial do provedor. O consumo da API pode gerar custos à conta do provedor.
 
 ## Configuração do Supabase
 
