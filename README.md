@@ -29,9 +29,9 @@ bun run build
 
 ## Configuração do Supabase
 
-1. Copie `.env.example` para `.env` no ambiente local.
-2. Preencha os valores das variáveis a partir do projeto Supabase que será usado.
-3. Em ambientes Lovable, configure as variáveis necessárias no backend/Cloud do próprio projeto; a branch Git não cria essa conexão automaticamente.
+1. O arquivo raiz `.env` deste branch mantém apenas a configuração pública do projeto Supabase usada pelo build Vite/Lovable Preview.
+2. Confirme que `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` e `VITE_SUPABASE_PROJECT_ID` apontam para o projeto Supabase correto.
+3. As variáveis `VITE_*` são incorporadas ao bundle do navegador e, portanto, são públicas. Não coloque segredos privados, tokens ou a chave `service_role` nesse arquivo. Segredos de servidor devem ficar apenas no gerenciador seguro do backend.
 
 Variáveis públicas do navegador:
 - `VITE_SUPABASE_URL`
@@ -43,7 +43,7 @@ Variáveis do runtime do servidor:
 
 `VITE_SUPABASE_PUBLISHABLE_KEY` deve ser uma chave publicável. Nunca use uma chave `service_role` ou `sb_secret_...` em uma variável `VITE_*`, no navegador, ou no repositório. O cliente administrativo do servidor, quando necessário, exige `SUPABASE_SERVICE_ROLE_KEY`; mantenha-a apenas nos segredos do servidor e não a copie para código do cliente.
 
-O arquivo `.env` é local e está no `.gitignore`. Use `.env.example` como modelo, sem colocar chaves reais nele.
+O arquivo raiz `.env` versionado contém exclusivamente a URL, o identificador do projeto e a chave publicável do Supabase para que o Lovable gere o preview. Mantenha segredos privados fora dele. Use `.env.example` como modelo para novos ambientes.
 
 ## Contas e banco de dados
 
