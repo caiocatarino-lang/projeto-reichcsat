@@ -42,6 +42,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_briefing?: Json | null
+          ai_generated_at?: string | null
+          ai_model?: string | null
           assignee?: string | null
           created_at?: string
           id?: string
