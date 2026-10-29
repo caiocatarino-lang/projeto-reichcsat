@@ -86,7 +86,7 @@ function PublicSurveyPage() {
           </div>
           <h1 className="mt-6 font-display text-2xl font-semibold text-[#091f46]">Pesquisa indisponível</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">Este link pode estar incorreto, expirado ou a pesquisa ainda não foi ativada. Entre em contato com a empresa que enviou o convite.</p>
-          <p className="mt-3 text-sm text-slate-500">Você será direcionado para o Instagram da BR24 em alguns segundos.</p><a href={BR24_INSTAGRAM_URL} className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-sky-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-600/20 hover:brightness-105">Instagram da BR24 <ArrowRight className="size-4" /></a><p className="mt-8 text-xs font-semibold tracking-wide text-slate-400">REICH<span className="text-cyan-500">CSAT</span></p>
+          <p className="mt-8 text-xs font-semibold tracking-wide text-slate-400">REICH<span className="text-cyan-500">CSAT</span></p>
         </section>
       </main>
     );
@@ -101,7 +101,7 @@ function PublicSurveyPage() {
           </div>
           <h1 className="mt-6 font-display text-2xl font-semibold text-[#091f46]">Obrigado pela sua resposta!</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">{survey.thank_you}</p>
-          <p className="mt-8 text-xs font-semibold tracking-wide text-slate-400">REICH<span className="text-cyan-500">CSAT</span></p>
+          <p className="mt-3 text-sm text-slate-500">Você será direcionado para o Instagram da BR24 em alguns segundos.</p><a href={BR24_INSTAGRAM_URL} className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-sky-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-600/20 hover:brightness-105">Instagram da BR24 <ArrowRight className="size-4" /></a><p className="mt-8 text-xs font-semibold tracking-wide text-slate-400">REICH<span className="text-cyan-500">CSAT</span></p>
         </section>
       </main>
     );
