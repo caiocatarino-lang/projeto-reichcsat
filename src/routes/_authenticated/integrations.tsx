@@ -1,16 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { pageHead } from "@/lib/workspace";
-
-export const Route = createFileRoute("/_authenticated/integrations")({
-  head: () => pageHead("Integrações", "Gerencie as conexões do ReichCsat com seus serviços."),
-  component: Page,
-});
-
-function Page() {
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold">Integrações</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Esta área ainda está em construção.</p>
-    </div>
-  );
+import { useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import { queryOptions,useSuspenseQuery,useMutation,useQueryClient } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { Plug,Unplug,Save,Search,CheckCircle2,XCircle } from 'lucide-react';
+import { getBitrix,connectBitrix,disconnectBitrix,testBitrixEntity,updateBitrixOptions } from '@/lib/bitrix.functions';
+import { normalizeWebhook } from '@/lib/bitrix-security';
+import { pageHead } from '@/lib/workspace';
+import { Choice,dateLabel } from '@/components/operations-ui';
+import { WorkspaceError,WorkspacePending } from '@/components/workspace-states';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
+const options=queryOptions({queryKey:['bitrix'],queryFn:()=>getBitrix()});
+export const Route=createFileRoute('/_authenticated/integrations')({loader:({context})=>context.queryClient.ensureQueryData(options),head:()=>pageHead('Integrações','Conecte o Bitrix24 Cloud e acompanhe os eventos de sincronização do ReichCsat.'),component:Page,pendingComponent:WorkspacePending,errorComponent:WorkspaceError,notFoundComponent:()=> <p>Integração não encontrada.</p>});
+function Page(){const {data}=useSuspenseQuery(options);return <div><header className="mb-8"><p className="text-xs uppercase text-primary">Conexões</p><h1 className="mt-2 text-2xl font-semibold">Integrações</h1></header><div className="flex flex-wrap items-center justify-between gap-4 border-y py-5"><h2 className="flex items-center gap-3 text-xl font-semibold"><Plug className="text-primary"/>Bitrix24 Cloud</h2><span className={data.state==='connected'?'text-success':'text-muted-foreground'}>{({connected:'Conectado',disconnected:'Não conectado',error:'Erro de conexão',incomplete:'Configuração incompleta'} as Record<string,string>)[data.state]}</span></div>{data.integration?.portal&&<p className="mt-4 break-words text-sm">Portal: {data.integration.portal}</p>}{data.integration?.last_sync_at&&<p className="mt-2 text-xs text-muted-foreground">Última sincronização: {dateLabel(data.integration.last_sync_at)}</p>}{data.role==='admin'?<Controls key={data.integration?.updated_at ?? 'none'} data={data}/>:<p className="mt-6 text-sm text-muted-foreground">Somente administradores podem alterar a integração.</p>}<section className="mt-10 border-t pt-6"><h2 className="text-lg font-semibold">Histórico recente</h2>{!data.events.length?<p className="py-8 text-sm text-muted-foreground">Nenhuma tentativa de sincronização registrada.</p>:<ul className="mt-4 divide-y">{data.events.map(e=><li key={e.id} className="flex flex-wrap items-center gap-3 py-4">{e.ok?<CheckCircle2 className="size-4 text-success"/>:<XCircle className="size-4 text-destructive"/>}<span className="flex-1 break-words text-sm">{e.action}</span><span className="text-xs text-muted-foreground">{e.ok?'Concluído':'Falhou'} · {dateLabel(e.created_at)}</span></li>)}</ul>}</section></div>;}
+function Controls({data}:{data:Awaited<ReturnType<typeof getBitrix>>}){
+ const [webhook,setWebhook]=useState('');const [error,setError]=useState('');const [type,setType]=useState<'lead'|'deal'>('lead');const [id,setId]=useState('');const [result,setResult]=useState<Awaited<ReturnType<typeof testBitrixEntity>>|null>(null);const [tasks,setTasks]=useState(data.integration?.create_tasks ?? false);const [timeline,setTimeline]=useState(data.integration?.post_timeline ?? false);const qc=useQueryClient();const connect=useServerFn(connectBitrix);const disconnect=useServerFn(disconnectBitrix);const test=useServerFn(testBitrixEntity);const save=useServerFn(updateBitrixOptions);
+ const mutation=useMutation({mutationFn:async(action:'connect'|'disconnect'|'test'|'save')=>{setResult(null);if(action==='connect'){await connect({data:{webhook:normalizeWebhook(webhook)}});setWebhook('');}if(action==='disconnect')await disconnect();if(action==='test'){if(!/^[1-9]\d{0,11}$/.test(id))throw new Error('Informe um ID CRM numérico válido.');setResult(await test({data:{type,id}}));}if(action==='save')await save({data:{create_tasks:tasks,post_timeline:timeline}});},onSuccess:()=>toast.success('Operação confirmada'),onError:e=>setError(e.message),onSettled:()=>qc.invalidateQueries({queryKey:['bitrix']})});
+ const act=(action:'connect'|'disconnect'|'test'|'save')=>{setError('');mutation.mutate(action);};
+ return <div className="mt-6 space-y-8">{data.state!=='connected'&&<form className="max-w-xl space-y-3" onSubmit={e=>{e.preventDefault();act('connect');}}><Label htmlFor="bitrix-webhook">Webhook de entrada</Label><Input id="bitrix-webhook" type="password" autoComplete="off" maxLength={500} value={webhook} onChange={e=>setWebhook(e.target.value)} required/><p className="text-xs text-muted-foreground">É necessário um webhook de entrada Bitrix24 Cloud com permissões CRM. Portais próprios não são aceitos.</p><Button disabled={mutation.isPending}><Plug/>{mutation.isPending?'Validando…':'Validar e conectar'}</Button></form>}{data.state==='connected'&&<><section className="space-y-4"><h3 className="font-semibold">Sincronização das respostas</h3><label className="flex items-center gap-3 text-sm"><Checkbox checked={tasks} onCheckedChange={v=>setTasks(v===true)}/>Criar tarefas para respostas negativas com responsável CRM</label><label className="flex items-center gap-3 text-sm"><Checkbox checked={timeline} onCheckedChange={v=>setTimeline(v===true)}/>Registrar respostas na timeline CRM</label><Button variant="outline" disabled={mutation.isPending} onClick={()=>act('save')}><Save/>Salvar opções</Button></section><form className="max-w-xl space-y-4 border-t pt-6" onSubmit={e=>{e.preventDefault();act('test');}}><h3 className="font-semibold">Testar entidade CRM</h3><div className="grid gap-4 sm:grid-cols-2"><Choice label="Entidade" value={type} onChange={v=>setType(v as typeof type)} options={ [['lead','Lead'],['deal','Negócio']]}/><div className="space-y-2"><Label htmlFor="crm-id">ID CRM</Label><Input id="crm-id" inputMode="numeric" maxLength={12} value={id} onChange={e=>setId(e.target.value)} required/></div></div><Button variant="outline" disabled={mutation.isPending}><Search/>Testar acesso</Button>{result&&<p role="status" className="break-words text-sm text-success">{result.title || 'Entidade encontrada'} · Responsável: {result.assigned || 'Não informado'} · Etapa: {result.stage || 'Não informada'}</p>}</form></>}{error&&<p role="alert" className="text-sm text-destructive">{error}</p>}{data.integration&&<div className="border-t pt-6"><Button variant="destructive" disabled={mutation.isPending} onClick={()=>{if(window.confirm('Desconectar o Bitrix24 e remover a credencial?'))act('disconnect');}}><Unplug/>Desconectar e remover credencial</Button></div>}</div>;
 }

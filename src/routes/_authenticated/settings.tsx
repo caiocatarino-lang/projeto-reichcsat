@@ -1,16 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { pageHead } from "@/lib/workspace";
-
-export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => pageHead("Configurações", "Gerencie sua organização e equipe no ReichCsat."),
-  component: Page,
-});
-
-function Page() {
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold">Configurações</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Esta área ainda está em construção.</p>
-    </div>
-  );
+import { useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import { queryOptions,useSuspenseQuery,useMutation,useQueryClient } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { Save } from 'lucide-react';
+import { getSettings,saveOrganization,saveProfile,saveMember } from '@/lib/operations.functions';
+import { organizationSchema,profileSchema,memberSchema } from '@/lib/operations-schema';
+import { roleLabel } from '@/lib/org';
+import { pageHead } from '@/lib/workspace';
+import { WorkspaceError,WorkspacePending } from '@/components/workspace-states';
+import { Choice } from '@/components/operations-ui';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+const options=queryOptions({queryKey:['settings'],queryFn:()=>getSettings()});
+export const Route=createFileRoute('/_authenticated/settings')({loader:({context})=>context.queryClient.ensureQueryData(options),head:()=>pageHead('Configurações','Gerencie seu perfil, organização e papéis da equipe no ReichCsat.'),component:Page,pendingComponent:WorkspacePending,errorComponent:WorkspaceError,notFoundComponent:()=> <p>Organização não encontrada.</p>});
+function Page(){const {data}=useSuspenseQuery(options);return <SettingsForm key={`${data.name}-${data.organization?.name}-${JSON.stringify(data.members.map(m=>m.role))}`} data={data}/>;}
+function SettingsForm({data}:{data:Awaited<ReturnType<typeof getSettings>>}){
+ const [name,setName]=useState(data.name);const [org,setOrg]=useState(data.organization?.name ?? '');const [roles,setRoles]=useState(Object.fromEntries(data.members.map(m=>[m.id,m.role])));const [error,setError]=useState('');const qc=useQueryClient();const profile=useServerFn(saveProfile);const organization=useServerFn(saveOrganization);const member=useServerFn(saveMember);
+ const mutation=useMutation({mutationFn:async(action:string)=>{if(action==='profile')await profile({data:profileSchema.parse({name})});else if(action==='org')await organization({data:organizationSchema.parse({name:org})});else await member({data:memberSchema.parse({id:action,role:roles[action]})});},onSuccess:async()=>{await Promise.all([qc.invalidateQueries({queryKey:['settings']}),qc.invalidateQueries({queryKey:['membership']}),qc.invalidateQueries({queryKey:['workspace']})]);toast.success('Alteração salva');},onError:e=>setError(e.message)});
+ const act=(action:string)=>{setError('');mutation.mutate(action);};
+ return <div><header className="mb-8"><p className="text-xs uppercase text-primary">Conta e equipe</p><h1 className="mt-2 text-2xl font-semibold">Configurações</h1></header>{error&&<p role="alert" className="mb-6 text-sm text-destructive">{error}</p>}<section className="border-t py-6"><h2 className="text-lg font-semibold">Meu perfil</h2><p className="mt-2 break-words text-sm text-muted-foreground">{data.email} · {roleLabel[data.role]}</p><form className="mt-5 max-w-lg space-y-3" onSubmit={e=>{e.preventDefault();act('profile');}}><Label htmlFor="profile-name">Nome de exibição</Label><Input id="profile-name" maxLength={120} value={name} onChange={e=>setName(e.target.value)}/><Button disabled={mutation.isPending}><Save/>Salvar perfil</Button></form></section><section className="border-t py-6"><h2 className="text-lg font-semibold">Organização</h2><form className="mt-5 max-w-lg space-y-3" onSubmit={e=>{e.preventDefault();act('org');}}><Label htmlFor="org-name">Nome da organização</Label><Input id="org-name" required maxLength={160} value={org} disabled={data.role!=='admin'} onChange={e=>setOrg(e.target.value)}/>{data.role==='admin'?<Button disabled={mutation.isPending}><Save/>Salvar organização</Button>:<p className="text-xs text-muted-foreground">Apenas administradores podem alterar o nome da organização.</p>}</form></section><section className="border-t py-6"><h2 className="text-lg font-semibold">Membros</h2><div className="mt-4 divide-y">{data.members.map(m=><div key={m.id} className="flex flex-wrap items-center gap-4 py-4"><div className="min-w-0 flex-1"><p className="break-words text-sm">{m.email || 'E-mail não informado'}{m.user_id===data.userId?' (você)':''}</p></div>{data.role==='admin'&&m.user_id!==data.userId?<><div className="w-40"><Choice label="Papel" value={roles[m.id] ?? m.role} options={Object.entries(roleLabel)} onChange={v=>setRoles({...roles,[m.id]:v as typeof m.role})}/></div><Button size="icon" variant="outline" aria-label="Salvar papel do membro" disabled={mutation.isPending || roles[m.id]===m.role} onClick={()=>act(m.id)}><Save/></Button></>:<span className="text-sm text-muted-foreground">{roleLabel[m.role]}</span>}</div>)}</div><p className="mt-4 text-xs text-muted-foreground">Convites e remoção de membros indisponíveis: o envio e a aceitação de convites ainda não estão configurados.</p></section><section className="border-t py-6"><h2 className="text-lg font-semibold">Preferências</h2><p className="mt-3 text-sm text-muted-foreground">Não há preferências individuais persistidas disponíveis. As opções de sincronização são gerenciadas em Integrações.</p></section></div>;
 }
