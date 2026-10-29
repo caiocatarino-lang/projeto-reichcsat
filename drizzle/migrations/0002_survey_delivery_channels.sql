@@ -12,7 +12,7 @@ ALTER TABLE public.surveys
     "email": {
       "enabled": false,
       "subject": "Como foi sua experiência com a {{empresa}}?",
-      "message": "Olá, {{nome}}!\\n\\nA sua opinião é muito importante para nós. Queremos entender como foi sua experiência com nosso atendimento e identificar oportunidades de melhoria.\\n\\nReserve alguns instantes para responder à pesquisa pelo link abaixo:\\n{{link_pesquisa}}\\n\\nAgradecemos pela sua confiança e participação.\\n\\nAtenciosamente,\\nEquipe {{empresa}}"
+      "message": "Olá, {{nome}}!\n\nA sua opinião é muito importante para nós. Queremos entender como foi sua experiência com nosso atendimento e identificar oportunidades de melhoria.\n\nReserve alguns instantes para responder à pesquisa pelo link abaixo:\n{{link_pesquisa}}\n\nAgradecemos pela sua confiança e participação.\n\nAtenciosamente,\nEquipe {{empresa}}"
     }
   }'::jsonb;
 
