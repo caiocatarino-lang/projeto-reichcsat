@@ -27,7 +27,7 @@ function Page() {
   const { data } = useSuspenseQuery(workspaceQuery);
   const search = Route.useSearch(); const navigate = Route.useNavigate(); const qc = useQueryClient();
   const [editor, setEditor] = useState<SurveyInput | null>(null); const [preview, setPreview] = useState<SurveyInput | null>(null); const [publicOrigin, setPublicOrigin] = useState("");
-  useEffect(() => { setPublicOrigin(window.location.origin); }, []);
+  useEffect(() => { const configuredOrigin = import.meta.env["VITE_PUBLIC_SURVEY_BASE_URL"]?.trim().replace(/\/+$/, ""); setPublicOrigin(configuredOrigin || window.location.origin); }, []);
   const publicLink = (name: string, publicId: string, channel: PublicSurveyChannel = "link") => `${publicOrigin || (typeof window !== "undefined" ? window.location.origin : "")}${makePublicSurveyPath(name, publicId, channel)}`;
   const copyPublicLink = async (name: string, publicId: string, channel: PublicSurveyChannel = "link") => { try { await navigator.clipboard.writeText(publicLink(name, publicId, channel)); toast.success(channel === "link" ? "Link público copiado" : `Link para ${channel === "whatsapp" ? "WhatsApp" : channel === "sms" ? "SMS" : "e-mail"} copiado`); } catch { toast.error("Não foi possível copiar automaticamente. Selecione o link exibido e copie manualmente."); } };
   const [confirm, setConfirm] = useState<{ id: string; status: "draft" | "active" | "archived" } | null>(null);
