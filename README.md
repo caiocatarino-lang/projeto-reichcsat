@@ -26,7 +26,7 @@ Validar:
     bun run typecheck
     bun run build
 
-O build gera o servidor em `.output/server/index.mjs`; o script `npm run start` inicia essa saída. O servidor lê HOST/PORT através do runtime Nitro.
+O build gera o servidor em `.output/server/index.mjs`; o script `npm run start` inicia essa saída. O servidor lê HOST/PORT através do runtime Nitro. O arquivo `.npmrc` ativa a resolução legacy de peer dependencies para a instalação npm; a CI valida `npm install`, lint, testes, build/typecheck e inicialização Node.
 
 ## Variáveis de ambiente
 
