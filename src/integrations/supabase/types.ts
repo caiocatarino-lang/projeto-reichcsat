@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_provider_configs: {
+        Row: {
+          id: string
+          org_id: string
+          provider: string
+          api_key_ciphertext: string
+          api_key_iv: string
+          api_key_tag: string
+          analysis_model: string
+          transcription_model: string
+          last_validated_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          provider: string
+          api_key_ciphertext: string
+          api_key_iv: string
+          api_key_tag: string
+          analysis_model: string
+          transcription_model: string
+          last_validated_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          provider?: string
+          api_key_ciphertext?: string
+          api_key_iv?: string
+          api_key_tag?: string
+          analysis_model?: string
+          transcription_model?: string
+          last_validated_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_provider_configs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cases: {
         Row: {
           ai_briefing: Json | null
