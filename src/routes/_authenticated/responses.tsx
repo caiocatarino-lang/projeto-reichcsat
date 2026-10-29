@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { queryOptions, useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity, BarChart3, CalendarDays, CircleHelp, Eye, Filter, MessageSquareText,
@@ -9,7 +9,7 @@ import {
   Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { getResponseAnalytics, getResponses } from '@/lib/operations.functions';
-import { filterSchema } from '@/lib/operations-schema';
+import { filterSchema, type ResponseFilters } from '@/lib/operations-schema';
 import { pageHead } from '@/lib/workspace';
 import { WorkspaceError, WorkspacePending } from '@/components/workspace-states';
 import { Choice, Pager, EmptyRecords, dateLabel } from '@/components/operations-ui';
@@ -20,18 +20,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
-const options=(filters:ReturnType<typeof filterSchema.parse>)=>queryOptions({
+const validateResponseSearch = (search: Record<string, unknown>): ResponseFilters => filterSchema.parse(search);
+const options=(filters:ResponseFilters)=>queryOptions({
   queryKey:['responses',filters],
   queryFn:()=>getResponses({data:filters}),
 });
-const analyticsOptions=(filters:ReturnType<typeof filterSchema.parse>)=>queryOptions({
+const analyticsOptions=(filters:ResponseFilters)=>queryOptions({
   queryKey:['response-analytics',filters],
   queryFn:()=>getResponseAnalytics({data:filters}),
 });
 const number=(value:number|null, suffix='')=>value===null?'—':`${value.toLocaleString('pt-BR')}${suffix}`;
 export const Route=createFileRoute('/_authenticated/responses')({
-  validateSearch:(s)=>filterSchema.parse(s),
-  loaderDeps:({search})=>search,
+  validateSearch: validateResponseSearch,
+  loaderDeps:({search})=>validateResponseSearch(search),
   loader:({context,deps})=>Promise.all([
     context.queryClient.ensureQueryData(options(deps)),
     context.queryClient.ensureQueryData(analyticsOptions(deps)),
@@ -40,12 +41,11 @@ export const Route=createFileRoute('/_authenticated/responses')({
   component:Page,
   pendingComponent:WorkspacePending,
   errorComponent:WorkspaceError,
-  notFoundComponent:EmptyRecords,
 });
 
 function Page(){
-  const filters=Route.useSearch();
-  const navigate=useNavigate();
+  const filters=filterSchema.parse(Route.useSearch());
+  const navigate=Route.useNavigate();
   const queryClient=useQueryClient();
   const {data}=useSuspenseQuery(options(filters));
   const {data:analytics}=useSuspenseQuery(analyticsOptions(filters));
@@ -150,7 +150,7 @@ function Page(){
 
       <article className="min-w-0 rounded-2xl border bg-card p-4 shadow-sm transition hover:shadow-lg sm:p-5">
         <div className="mb-4 flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><Users className="size-4 text-primary"/><h2 className="font-semibold">Promotores, neutros e detratores</h2></div><p className="mt-1 text-xs text-muted-foreground">Distribuição das respostas NPS no recorte selecionado.</p></div><span className="rounded-full bg-muted px-2.5 py-1 text-xs">{number(analytics.nps.total)} NPS</span></div>
-        {analytics.nps.total?<div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-[minmax(0,1fr)_130px]"><ChartContainer className="mx-auto h-56 w-full max-w-[330px]" config={chartConfig}><PieChart><ChartTooltip content={<ChartTooltipContent formatter={(value,name)=>[`${Number(value).toLocaleString('pt-BR')} respostas`,String(name)]}/>} /><Pie data={sentimentData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={82} paddingAngle={4} strokeWidth={0} activeShape={{outerRadius:88}}>{sentimentData.map(item=><Cell key={item.name} fill={item.fill}/>)}</Pie></PieChart></ChartContainer><div className="space-y-4">{sentimentData.map((item,index)=><div key={item.name} className="flex items-center justify-between gap-3"><div className="flex min-w-0 items-center gap-2"><span className={`size-2.5 shrink-0 rounded-full ${index===0?'bg-emerald-500':index===1?'bg-amber-500':'bg-rose-500'}`}/><div className="min-w-0"><p className="text-xs font-medium">{item.name}</p><p className="text-[11px] text-muted-foreground">{analytics.nps.total?Math.round(item.value/analytics.nps.total*100):0}%</p></div></div><p className="text-sm font-semibold tabular-nums">{number(item.value)}</p></div>)}</div></div>:<ChartEmpty message="Selecione NPS para visualizar a distribuição por perfil."/>}
+        {analytics.nps.total?<div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-[minmax(0,1fr)_130px]"><ChartContainer className="mx-auto h-56 w-full max-w-[330px]" config={chartConfig}><PieChart><ChartTooltip content={<ChartTooltipContent formatter={(value,name)=>[`${Number(value).toLocaleString('pt-BR')} respostas`,String(name)]}/>} /><Pie data={sentimentData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={82} paddingAngle={4} strokeWidth={0} >{sentimentData.map(item=><Cell key={item.name} fill={item.fill}/>)}</Pie></PieChart></ChartContainer><div className="space-y-4">{sentimentData.map((item,index)=><div key={item.name} className="flex items-center justify-between gap-3"><div className="flex min-w-0 items-center gap-2"><span className={`size-2.5 shrink-0 rounded-full ${index===0?'bg-emerald-500':index===1?'bg-amber-500':'bg-rose-500'}`}/><div className="min-w-0"><p className="text-xs font-medium">{item.name}</p><p className="text-[11px] text-muted-foreground">{analytics.nps.total?Math.round(item.value/analytics.nps.total*100):0}%</p></div></div><p className="text-sm font-semibold tabular-nums">{number(item.value)}</p></div>)}</div></div>:<ChartEmpty message="Selecione NPS para visualizar a distribuição por perfil."/>}
       </article>
     </section>
 
