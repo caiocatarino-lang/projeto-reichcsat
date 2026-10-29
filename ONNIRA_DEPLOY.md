@@ -46,7 +46,7 @@ O REICHCSAT criptografa as chaves de IA guardadas em `ai_provider_configs` usand
    - Nome: `REICHCSAT - Portabilidade`
    - Runtime: `node`
    - Diretório base: `/`
-   - Instalação: `npm install`
+   - Instalação: `npm install` (a branch inclui `.npmrc`, já validado no CI) (a branch inclui `.npmrc`, já validado no CI)
    - Build: `npm run build`
    - Inicialização: `npm run start`
    - Porta: `3000` (ou a porta que a Onnira definir e informar ao processo via `PORT`)
