@@ -33,7 +33,7 @@ export function parsePublicSurveySlug(value: string): {
   channel: PublicSurveyChannel;
 } | null {
   const match = new RegExp(`^.+-(${PUBLIC_ID_PATTERN})(?:-(whatsapp|sms|email))?$`).exec(value);
-  if (!match) return null;
+  if (!match || !match[1]) return null;
   return {
     publicId: match[1],
     channel: (match[2] as PublicSurveyChannel | undefined) ?? "link",
