@@ -27,6 +27,16 @@ bun run test
 bun run build
 ```
 
+## Tratativas com briefing de IA
+
+A área de Tratativas apresenta a nota e o comentário original e pode gerar um briefing estruturado de recuperação: resumo, problema principal, necessidade provável, sinais de sentimento no texto, urgência sugerida, abordagem, frase de abertura, próximos passos e pontos a evitar. O briefing é salvo em `cases.ai_briefing` e permanece vinculado à tratativa.
+
+A geração usa a OpenAI Responses API no servidor, com `store: false`. O modelo recebe apenas a nota, tipo de pesquisa, canal, tipo de atendimento, nome da pesquisa e comentário com e-mails/telefones ocultados. Nome e e-mail do contato não são enviados no pedido à IA. A saída é validada no servidor e a chave nunca deve ser exposta no navegador.
+
+**Configuração necessária:** definir `OPENAI_API_KEY` como segredo de servidor em Lovable Cloud. Opcionalmente, definir `OPENAI_MODEL`; por padrão é usado `gpt-6-luna`. Sem a chave, o painel informa que a IA não está configurada e a geração não funciona ainda. O consumo da API pode gerar custos à conta do provedor.
+
+A análise é assistiva e descreve somente sinais presentes no comentário; o colaborador deve confirmar a causa com o cliente antes de assumir fatos ou prometer prazos. A IA não deve ser usada para inferir características psicológicas ou sensíveis do cliente.
+
 ## Configuração do Supabase
 
 1. O arquivo raiz `.env` deste branch mantém apenas a configuração pública do projeto Supabase usada pelo build Vite/Lovable Preview.
