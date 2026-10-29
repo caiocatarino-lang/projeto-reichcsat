@@ -9,7 +9,7 @@ const response = (value: Partial<Tables<"responses">>): Tables<"responses"> => (
   contact_email: null, contact_name: null, is_negative: false, responsible: null, service_type: null, ...value,
 });
 const survey = (value: Partial<Tables<"surveys">>): Tables<"surveys"> => ({
-  ...newSurvey, id: "s", type: "csat", org_id: "o", public_token: "token", status: "active", service_type: null,
+  ...newSurvey, id: "s", type: "csat", org_id: "o", public_id: "a1b2c3d4e5f60718", public_token: "token", status: "active", service_type: null,
   created_at: "2026-10-01", updated_at: "2026-10-01", created_by: null, ...value,
 });
 describe("Dashboard aggregation", () => {
