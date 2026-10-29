@@ -5,6 +5,9 @@
 Branch: `portable-onnira-2026-10-29`  
 Commit-base: `1751f7221ec49c509ad5e27d5bc81a0672205f1a`
 
+
+Último commit validado para build Node.js: `090ecde38265a1fb5e937dbeff86690368f45c22`. O CI desse commit passou em lint, testes, typecheck, build e smoke test de inicialização do servidor Node.js: [resultado no GitHub Actions](https://github.com/caiocatarino-lang/projeto-reichcsat/actions/runs/40957206316).
+
 ## O que esta branch prepara
 
 - Substitui a configuração de build exclusiva do Lovable por TanStack Start + Nitro com o preset Node.js `node_server`.
