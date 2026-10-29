@@ -29,6 +29,13 @@
       "when": 1793291079090,
       "tag": "0003_public_survey_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793295000000,
+      "tag": "0004_case_ai_briefing",
+      "breakpoints": true
     }
   ]
 }
