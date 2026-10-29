@@ -28,7 +28,6 @@ export const Route=createFileRoute('/_authenticated/cases')({
   loader:({context,deps})=>context.queryClient.ensureQueryData(options(deps)),
   head:()=>pageHead('Tratativas','Recupere clientes insatisfeitos com briefings e recomendações de IA.'),
   component:Page,
-  pendingComponent:undefined,
 });
 type Row=Awaited<ReturnType<typeof getCases>>['rows'][number];
 type Briefing=ReturnType<typeof caseAiBriefingSchema.parse>;
