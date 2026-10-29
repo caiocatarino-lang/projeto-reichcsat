@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { getPublicSurvey, submitResponse } from "@/lib/public.functions";
+import { getPublicSurveyById, submitPublicIdResponse } from "@/lib/public.functions";
 import { parsePublicSurveySlug } from "@/lib/public-survey-url";
 
 const BR24_INSTAGRAM_URL = "https://www.instagram.com/br24io/";
@@ -15,9 +15,9 @@ const BR24_INSTAGRAM_LABEL = "Instagram da BR24";
 export const Route = createFileRoute("/pesquisa/$slug")({
   loader: async ({ params }) => {
     const parsed = parsePublicSurveySlug(params.slug);
-    if (!parsed) return { survey: null, token: "", channel: "link" as const };
-    const survey = await getPublicSurvey({ data: { token: parsed.token } });
-    return { survey, token: parsed.token, channel: parsed.channel };
+    if (!parsed) return { survey: null, publicId: "", channel: "link" as const };
+    const survey = await getPublicSurveyById({ data: { publicId: parsed.publicId } });
+    return { survey, publicId: parsed.publicId, channel: parsed.channel };
   },
   head: () => ({
     meta: [
@@ -30,8 +30,8 @@ export const Route = createFileRoute("/pesquisa/$slug")({
 });
 
 function PublicSurveyPage() {
-  const { survey, token, channel } = Route.useLoaderData();
-  const submitPublicResponse = useServerFn(submitResponse);
+  const { survey, publicId, channel } = Route.useLoaderData();
+  const submitPublicResponse = useServerFn(submitPublicIdResponse);
   const [score, setScore] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [name, setName] = useState("");
@@ -56,7 +56,7 @@ function PublicSurveyPage() {
     try {
       await submitPublicResponse({
         data: {
-          token,
+          publicId,
           score,
           comment: comment.trim() || undefined,
           name: name.trim() || undefined,
