@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, type SearchSchemaInput } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, CheckCircle2, LockKeyhole, Mail, MessageCircle, Sparkles } from "lucide-react";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getPublicSurvey, submitResponse } from "@/lib/public.functions";
 
 type Channel = "link" | "whatsapp" | "sms" | "email";
+const BR24_INSTAGRAM_URL = "https://www.instagram.com/br24io/";
 const channelLabels: Record<Channel, string> = {
   link: "Link público",
   whatsapp: "WhatsApp",
@@ -46,6 +47,12 @@ function PublicSurveyPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!submitted) return;
+    const timer = window.setTimeout(() => window.location.replace(BR24_INSTAGRAM_URL), 4000);
+    return () => window.clearTimeout(timer);
+  }, [submitted]);
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (score === null || busy) return;
@@ -79,7 +86,7 @@ function PublicSurveyPage() {
           </div>
           <h1 className="mt-6 font-display text-2xl font-semibold text-[#091f46]">Pesquisa indisponível</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">Este link pode estar incorreto, expirado ou a pesquisa ainda não foi ativada. Entre em contato com a empresa que enviou o convite.</p>
-          <p className="mt-8 text-xs font-semibold tracking-wide text-slate-400">REICH<span className="text-cyan-500">CSAT</span></p>
+          <p className="mt-3 text-sm text-slate-500">Você será direcionado para o Instagram da BR24 em alguns segundos.</p><a href={BR24_INSTAGRAM_URL} className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-sky-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-600/20 hover:brightness-105">Instagram da BR24 <ArrowRight className="size-4" /></a><p className="mt-8 text-xs font-semibold tracking-wide text-slate-400">REICH<span className="text-cyan-500">CSAT</span></p>
         </section>
       </main>
     );
