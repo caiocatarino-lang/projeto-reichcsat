@@ -1,6 +1,6 @@
 export type PublicSurveyChannel = "link" | "whatsapp" | "sms" | "email";
 
-const TOKEN_PATTERN = "[a-f0-9]{24}";
+const PUBLIC_ID_PATTERN = "[a-f0-9]{16}";
 
 export function slugifySurveyName(name: string): string {
   const slug = name
@@ -15,32 +15,27 @@ export function slugifySurveyName(name: string): string {
   return slug || "pesquisa";
 }
 
-/**
- * The readable title and opaque public token share one path segment.
- * Channel variants use a trailing path suffix, never a query string.
- */
+/** Human-readable path + public ID, with no query-string parameters. */
 export function makePublicSurveyPath(
   name: string,
-  token: string,
+  publicId: string,
   channel: PublicSurveyChannel = "link",
 ): string {
-  if (!new RegExp(`^${TOKEN_PATTERN}$`).test(token)) {
-    throw new Error("Token público inválido.");
+  if (!new RegExp(`^${PUBLIC_ID_PATTERN}$`).test(publicId)) {
+    throw new Error("Identificador público inválido.");
   }
-
-  const base = `${slugifySurveyName(name)}-${token}`;
+  const base = `${slugifySurveyName(name)}-${publicId}`;
   return `/pesquisa/${base}${channel === "link" ? "" : `-${channel}`}`;
 }
 
 export function parsePublicSurveySlug(value: string): {
-  token: string;
+  publicId: string;
   channel: PublicSurveyChannel;
 } | null {
-  const match = new RegExp(`^.+-(${TOKEN_PATTERN})(?:-(whatsapp|sms|email))?$`).exec(value);
+  const match = new RegExp(`^.+-(${PUBLIC_ID_PATTERN})(?:-(whatsapp|sms|email))?$`).exec(value);
   if (!match) return null;
-
   return {
-    token: match[1],
+    publicId: match[1],
     channel: (match[2] as PublicSurveyChannel | undefined) ?? "link",
   };
 }
