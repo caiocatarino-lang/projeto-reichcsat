@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -44,10 +44,11 @@ function authErrorText(error: unknown): string {
 }
 
 function InfinityMark({ className = "" }: { className?: string }) {
+  const gradientId = `reich-infinity-gradient-${useId().replace(/:/g, "")}`;
   return (
     <svg aria-hidden="true" viewBox="0 0 300 118" className={className} fill="none">
       <defs>
-        <linearGradient id="reich-infinity-gradient" x1="12" y1="30" x2="286" y2="96" gradientUnits="userSpaceOnUse">
+        <linearGradient id={gradientId} x1="12" y1="30" x2="286" y2="96" gradientUnits="userSpaceOnUse">
           <stop stopColor="#0867FF" />
           <stop offset=".46" stopColor="#03D8FF" />
           <stop offset="1" stopColor="#09D6B9" />
@@ -55,14 +56,14 @@ function InfinityMark({ className = "" }: { className?: string }) {
       </defs>
       <path
         d="M149 59C124 34 104 12 78 12 45 12 23 34 23 59s22 47 55 47c34 0 58-31 72-47 14-16 38-47 72-47 33 0 55 22 55 47s-22 47-55 47c-26 0-47-22-73-47Z"
-        stroke="url(#reich-infinity-gradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth="13"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M149 59c-17-16-30-31-47-38M149 59c20 20 32 36 54 42"
-        stroke="url(#reich-infinity-gradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth="5"
         strokeLinecap="round"
         opacity=".85"
@@ -225,7 +226,7 @@ function AuthPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#eef4fc] p-3 text-slate-900 sm:p-5 lg:p-8">
-      <div className="grid min-h-[min(900px,calc(100vh-64px))] w-full max-w-[1480px] grid-cols-1 overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_25px_90px_rgba(24,83,145,0.16)] lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)]">
+      <div className="grid min-h-[min(900px,calc(100dvh_-_4rem))] w-full max-w-[1480px] grid-cols-1 overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_25px_90px_rgba(24,83,145,0.16)] lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)]">
         <aside className="relative isolate flex min-h-[290px] flex-col overflow-hidden bg-[#041b46] px-6 py-8 text-white sm:px-10 sm:py-10 lg:min-h-[760px] lg:px-12 lg:py-12 xl:px-16 xl:py-14">
           <div
             aria-hidden="true"
