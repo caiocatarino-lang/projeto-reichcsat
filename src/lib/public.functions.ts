@@ -4,6 +4,8 @@ import {
   isAllowedPublicScore,
   publicResponseSchema,
   publicSurveyTokenSchema,
+  publicSlugResponseSchema,
+  publicSurveyIdSchema,
 } from "@/lib/public-survey-schema";
 
 export const getPublicSurvey = createServerFn({ method: "GET" })
@@ -56,8 +58,6 @@ export const submitResponse = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
-import { publicSlugResponseSchema, publicSurveyIdSchema } from "@/lib/public-survey-schema";
 
 export const getPublicSurveyById = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ publicId: publicSurveyIdSchema }).parse(input))
