@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/surveys")({
   head: () => pageHead("Pesquisas", "Crie e acompanhe as pesquisas NPS e CSAT da sua organização."),
   component: Page, errorComponent: WorkspaceError, pendingComponent: WorkspacePending, notFoundComponent: () => <p>Pesquisas não encontradas.</p>,
 });
-const asInput = (s: Tables<"surveys">): SurveyInput => ({ id: s.id, type: s.type, name: s.name, question: s.question, comment_prompt: s.comment_prompt, thank_you: s.thank_you, service_type: s.service_type ?? "", csat_scale: s.csat_scale, csat_threshold: s.csat_threshold, delivery_channels: parseDeliveryChannels(s.delivery_channels) });
+const asInput = (s: Tables<"surveys">): SurveyInput => ({ id: s.id, type: s.type, name: s.name, question: s.question, comment_prompt: s.comment_prompt, thank_you: s.thank_you, service_type: s.service_type ?? "", csat_scale: s.csat_scale === 10 ? 10 : 5, csat_threshold: s.csat_threshold, delivery_channels: parseDeliveryChannels(s.delivery_channels) });
 function Page() {
   const { data } = useSuspenseQuery(workspaceQuery);
   const search = Route.useSearch(); const navigate = Route.useNavigate(); const qc = useQueryClient();
