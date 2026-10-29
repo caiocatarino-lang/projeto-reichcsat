@@ -1,16 +1,21 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { pageHead } from "@/lib/workspace";
-
-export const Route = createFileRoute("/_authenticated/cases")({
-  head: () => pageHead("Tratativas", "Acompanhe a recuperação de clientes e suas avaliações negativas."),
-  component: Page,
-});
-
-function Page() {
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold">Tratativas</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Esta área ainda está em construção.</p>
-    </div>
-  );
-}
+import { useState } from 'react';
+import { createFileRoute,useNavigate } from '@tanstack/react-router';
+import { queryOptions,useSuspenseQuery,useMutation,useQueryClient } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { Pencil,Save } from 'lucide-react';
+import { getCases,saveCase } from '@/lib/operations.functions';
+import { caseSchema,filterSchema } from '@/lib/operations-schema';
+import { caseStatusLabel } from '@/lib/org';
+import { pageHead } from '@/lib/workspace';
+import { Choice,Pager,EmptyRecords,dateLabel } from '@/components/operations-ui';
+import { WorkspaceError,WorkspacePending } from '@/components/workspace-states';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription } from '@/components/ui/dialog';
+const options=(f:ReturnType<typeof filterSchema.parse>)=>queryOptions({queryKey:['cases',f],queryFn:()=>getCases({data:f})});
+export const Route=createFileRoute('/_authenticated/cases')({validateSearch:s=>filterSchema.parse(s),loaderDeps:({search})=>search,loader:({context,deps})=>context.queryClient.ensureQueryData(options(deps)),head:()=>pageHead('Tratativas','Gerencie a recuperação de clientes e avaliações negativas no ReichCsat.'),component:Page,pendingComponent:WorkspacePending,errorComponent:WorkspaceError,notFoundComponent:EmptyRecords});
+type Row=Awaited<ReturnType<typeof getCases>>['rows'][number];
+function Page(){const f=Route.useSearch();const navigate=useNavigate();const {data}=useSuspenseQuery(options(f));const [selected,setSelected]=useState<Row|null>(null);return <div><header className="mb-8"><p className="text-xs uppercase text-primary">Recuperação de clientes</p><h1 className="mt-2 text-2xl font-semibold">Tratativas</h1></header><div className="max-w-xs border-y py-4"><Choice label="Status" value={f.status ?? 'all'} options={ [['all','Todos os status'],...Object.entries(caseStatusLabel)]} onChange={v=>navigate({to:'/cases',search:{...f,status:v==='all'?undefined:v as typeof f.status,page:1}})}/></div>{!data.rows.length?<EmptyRecords cases/>:<div className="mt-6 divide-y">{data.rows.map(c=><article key={c.id} className="flex flex-wrap items-start gap-4 py-5"><div className="w-20 shrink-0"><p className="text-xl font-semibold text-destructive">{c.responses.score}</p><p className="text-xs text-muted-foreground">{c.responses.survey_type.toUpperCase()}</p></div><div className="min-w-0 flex-1"><p className="break-words font-semibold">{c.responses.contact_name || c.responses.contact_email || 'Contato não informado'}</p><p className="mt-2 line-clamp-2 break-words text-sm text-muted-foreground">{c.responses.comment || 'Sem comentário'}</p><p className="mt-3 text-xs text-muted-foreground">{dateLabel(c.created_at)} · Responsável: {c.assignee || 'Não atribuído'}</p></div><div className="flex items-center gap-3"><span className="text-sm text-primary">{caseStatusLabel[c.status]}</span><Button variant="outline" size="icon" aria-label="Editar tratativa" onClick={()=>setSelected(c)}><Pencil/></Button></div></article>)}</div>}<Pager page={f.page} count={data.count} change={page=>navigate({to:'/cases',search:{...f,page}})}/>{selected&&<Editor row={selected} close={()=>setSelected(null)}/>}</div>;}
+function Editor({row,close}:{row:Row;close:()=>void}){const [form,setForm]=useState({id:row.id,status:row.status,assignee:row.assignee ?? '',notes:row.notes ?? ''});const [error,setError]=useState('');const qc=useQueryClient();const save=useServerFn(saveCase);const mutation=useMutation({mutationFn:(d:typeof form)=>save({data:d}),onSuccess:async()=>{await qc.invalidateQueries({queryKey:['cases']});await qc.invalidateQueries({queryKey:['workspace']});close();},onError:e=>setError(e.message)});return <Dialog open onOpenChange={o=>!o&&!mutation.isPending&&close()}><DialogContent className="max-h-[85dvh] overflow-y-auto"><DialogHeader><DialogTitle>Editar tratativa</DialogTitle><DialogDescription>{row.responses.survey_type.toUpperCase()} · Nota {row.responses.score}</DialogDescription></DialogHeader><p className="whitespace-pre-wrap break-words text-sm">{row.responses.comment || 'Sem comentário'}</p><form className="space-y-4" onSubmit={e=>{e.preventDefault();const parsed=caseSchema.safeParse(form);if(!parsed.success){setError(parsed.error.issues[0]?.message ?? 'Verifique os campos');return;}setError('');mutation.mutate(parsed.data);}}><Choice label="Status" value={form.status} options={Object.entries(caseStatusLabel)} onChange={v=>setForm({...form,status:v as typeof form.status})}/><Label htmlFor="assignee">Responsável</Label><Input id="assignee" maxLength={120} value={form.assignee} onChange={e=>setForm({...form,assignee:e.target.value})}/><Label htmlFor="case-notes">Notas internas</Label><Textarea id="case-notes" maxLength={5000} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/>{error&&<p role="alert" className="text-destructive">{error}</p>}<Button disabled={mutation.isPending}><Save/>{mutation.isPending?'Salvando…':'Salvar tratativa'}</Button></form></DialogContent></Dialog>;}

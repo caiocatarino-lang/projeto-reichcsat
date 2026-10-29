@@ -1,0 +1,10 @@
+import { Link } from '@tanstack/react-router';
+import { ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { pageSize } from '@/lib/operations-schema';
+export const dateLabel=(value:string)=>new Date(value).toLocaleString('pt-BR');
+export function Choice({label,value,onChange,options}:{label:string;value:string;onChange:(v:string)=>void;options:Array<[string,string]>}) {return <div className="min-w-0 space-y-2"><Label>{label}</Label><Select value={value || 'all'} onValueChange={onChange}><SelectTrigger aria-label={label}><SelectValue /></SelectTrigger><SelectContent>{options.map(([v,l])=><SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent></Select></div>;}
+export function Pager({page,count,change}:{page:number;count:number;change:(p:number)=>void}) {return <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t pt-4"><span className="text-sm text-muted-foreground">{count} registro(s) · Página {page} de {Math.max(1,Math.ceil(count/pageSize))}</span><div className="flex gap-2"><Button variant="outline" size="icon" aria-label="Página anterior" disabled={page<=1} onClick={()=>change(page-1)}><ChevronLeft /></Button><Button variant="outline" size="icon" aria-label="Próxima página" disabled={page*pageSize>=count} onClick={()=>change(page+1)}><ChevronRight /></Button></div></div>;}
+export function EmptyRecords({cases=false}:{cases?:boolean}) {return <div className="py-16 text-center"><ClipboardList className="mx-auto mb-4 size-8 text-muted-foreground"/><h2 className="text-lg font-semibold">{cases?'Nenhuma tratativa encontrada':'Nenhuma resposta encontrada'}</h2><p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{cases?'Tratativas são criadas automaticamente quando uma resposta negativa é recebida.':'Não há respostas para estes filtros. Confira o período ou ative uma pesquisa.'}</p><Button asChild className="mt-6"><Link to="/surveys">Ver pesquisas</Link></Button></div>;}

@@ -1,16 +1,26 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { pageHead } from "@/lib/workspace";
-
-export const Route = createFileRoute("/_authenticated/responses")({
-  head: () => pageHead("Respostas", "Consulte as avaliações NPS e CSAT dos seus clientes."),
-  component: Page,
-});
-
-function Page() {
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold">Respostas</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Esta área ainda está em construção.</p>
-    </div>
-  );
+import { useState } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { Search, Eye } from 'lucide-react';
+import { getResponses } from '@/lib/operations.functions';
+import { filterSchema } from '@/lib/operations-schema';
+import { pageHead } from '@/lib/workspace';
+import { WorkspaceError, WorkspacePending } from '@/components/workspace-states';
+import { Choice, Pager, EmptyRecords, dateLabel } from '@/components/operations-ui';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+const options=(filters:ReturnType<typeof filterSchema.parse>)=>queryOptions({queryKey:['responses',filters],queryFn:()=>getResponses({data:filters})});
+export const Route=createFileRoute('/_authenticated/responses')({validateSearch:(s)=>filterSchema.parse(s),loaderDeps:({search})=>search,loader:({context,deps})=>context.queryClient.ensureQueryData(options(deps)),head:()=>pageHead('Respostas','Consulte e filtre avaliações reais dos clientes do ReichCsat.'),component:Page,pendingComponent:WorkspacePending,errorComponent:WorkspaceError,notFoundComponent:EmptyRecords});
+function Page(){
+ const filters=Route.useSearch();const navigate=useNavigate();const {data}=useSuspenseQuery(options(filters));
+ const [selected,setSelected]=useState<(typeof data.rows)[number]|null>(null);
+ const update=(patch:Partial<typeof filters>)=>navigate({to:'/responses',search:{...filters,...patch,page:patch.page ?? 1}});
+ return <div><header className="mb-8"><p className="text-xs uppercase text-primary">Voz do cliente</p><h1 className="mt-2 text-2xl font-semibold">Respostas</h1><p className="mt-2 text-sm text-muted-foreground">Avaliações recebidas pela sua organização</p></header>
+ <div className="grid gap-4 border-y py-5 sm:grid-cols-2 lg:grid-cols-4"><Choice label="Pesquisa" value={filters.survey ?? 'all'} onChange={v=>update({survey:v==='all'?undefined:v})} options={ [['all','Todas as pesquisas'],...data.surveys.map(s=>[s.id,s.name] as [string,string])]}/><Choice label="Tipo" value={filters.type ?? 'all'} onChange={v=>update({type:v==='all'?undefined:v as 'nps'|'csat'})} options={ [['all','NPS e CSAT'],['nps','NPS'],['csat','CSAT']]}/><Choice label="Período" value={filters.period} onChange={v=>update({period:v as typeof filters.period})} options={ [['7','Últimos 7 dias'],['30','Últimos 30 dias'],['90','Últimos 90 dias'],['all','Todo o período']]}/><form className="space-y-2" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);update({q:String(f.get('q') ?? ''),min:f.get('min')?Number(f.get('min')):undefined,max:f.get('max')?Number(f.get('max')):undefined});}}><Label htmlFor="response-search">Contato ou comentário</Label><div className="flex gap-2"><Input key={filters.q} id="response-search" name="q" defaultValue={filters.q} maxLength={100}/><Button size="icon" aria-label="Aplicar busca e notas"><Search /></Button></div><div className="flex gap-2"><Input key={`min-${filters.min}`} aria-label="Nota mínima" name="min" type="number" min={0} max={10} placeholder="Nota mín." defaultValue={filters.min}/><Input key={`max-${filters.max}`} aria-label="Nota máxima" name="max" type="number" min={0} max={10} placeholder="Nota máx." defaultValue={filters.max}/></div></form></div>
+ {data.rows.length===0?<EmptyRecords/>:<div className="mt-6 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-xs text-muted-foreground"><tr>{['Nota / pesquisa','Contato','Comentário','Canal / Bitrix','Data',''].map((t,i)=><th key={i} className="border-b px-3 py-3">{t}</th>)}</tr></thead><tbody>{data.rows.map(r=><tr key={r.id} className="border-b"><td className="px-3 py-4"><span className={r.is_negative?'font-semibold text-destructive':'font-semibold text-primary'}>{r.score} · {r.survey_type.toUpperCase()}</span><p className="mt-1 max-w-48 break-words">{r.surveys.name}</p></td><td className="max-w-48 break-words px-3">{r.contact_name || r.contact_email || 'Não informado'}</td><td className="max-w-64 px-3"><p className="line-clamp-2 break-words">{r.comment || 'Sem comentário'}</p></td><td className="px-3">{r.channel}<p className="text-xs text-muted-foreground">{r.bitrix_synced?'Sincronizada':r.bitrix_entity_id?'Não sincronizada':'Sem vínculo CRM'}</p></td><td className="whitespace-nowrap px-3 text-xs">{dateLabel(r.created_at)}</td><td><Button size="icon" variant="ghost" aria-label="Ver resposta" onClick={()=>setSelected(r)}><Eye/></Button></td></tr>)}</tbody></table></div>}
+ <Pager page={filters.page} count={data.count} change={page=>update({page})}/>
+ {selected&&<Dialog open onOpenChange={o=>!o&&setSelected(null)}><DialogContent className="max-h-[85dvh] overflow-y-auto"><DialogHeader><DialogTitle>Resposta · {selected.survey_type.toUpperCase()} {selected.score}</DialogTitle><DialogDescription>{selected.surveys.name}</DialogDescription></DialogHeader><dl className="space-y-4 break-words">{[['Contato',selected.contact_name],['E-mail',selected.contact_email],['Comentário',selected.comment],['Responsável',selected.responsible],['Atendimento',selected.service_type],['Canal',selected.channel],['Recebida em',dateLabel(selected.created_at)],['CRM',selected.bitrix_entity_id?`${selected.bitrix_entity_type} #${selected.bitrix_entity_id}`:null],['Sincronização Bitrix',selected.bitrix_synced?'Sincronizada':'Não sincronizada']].map(([label,value])=><div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 whitespace-pre-wrap">{value || 'Não informado'}</dd></div>)}</dl></DialogContent></Dialog>}
+ </div>;
 }
