@@ -18,3 +18,14 @@ export function isAllowedPublicScore(type: "nps" | "csat", score: number, csatSc
   if (type === "nps") return score >= 0 && score <= 10;
   return score >= 1 && score <= csatScale;
 }
+
+
+export const publicSurveyIdSchema = z.string().regex(/^[a-f0-9]{16}$/);
+export const publicSlugResponseSchema = z.object({
+  publicId: publicSurveyIdSchema,
+  score: z.number().int().min(0).max(10),
+  comment: z.string().trim().max(2000).optional(),
+  name: z.string().trim().max(120).optional(),
+  email: z.string().trim().email().max(200).optional().or(z.literal("")),
+  channel: publicSurveyChannelSchema.default("link"),
+}).strict();
