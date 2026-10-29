@@ -24,7 +24,8 @@ export function filterBounds(f: ResponseFilters, now = new Date()) {
   let since: string | null = null;
   let until: string | null = null;
   if (f.month) {
-    const [year, month] = f.month.split('-').map(Number);
+    const year = Number(f.month.slice(0, 4));
+    const month = Number(f.month.slice(5, 7));
     since = new Date(Date.UTC(year, month - 1, 1)).toISOString();
     until = new Date(Date.UTC(year, month, 1)).toISOString();
   } else if (f.period !== 'all') {
