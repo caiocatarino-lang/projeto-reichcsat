@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
+import { surveySaveErrorMessage } from "@/lib/survey-save-errors";
 import { canManageSurveys, surveySchema } from "./survey-schema";
 
 export const getWorkspace = createServerFn({ method: "GET" })
@@ -61,9 +63,27 @@ export const saveSurvey = createServerFn({ method: "POST" })
       if (updateError) throw new Error("Não foi possível salvar a pesquisa.");
       return result;
     }
+    // Generate the readable public identifier in the server action. This avoids relying
+    // on a database trigger for the mandatory public_id value during survey creation.
+    const publicId = randomBytes(8).toString("hex");
     const { data: result, error: insertError } = await context.supabase.from("surveys")
-      .insert({ ...payload, org_id: membership.org_id, created_by: context.userId, status: "draft" }).select("id").single();
-    if (insertError) throw new Error("Não foi possível criar a pesquisa.");
+      .insert({
+        ...payload,
+        org_id: membership.org_id,
+        created_by: context.userId,
+        status: "draft",
+        public_id: publicId,
+      })
+      .select("id,public_id")
+      .single();
+    if (insertError) {
+      // Never log survey content, user email, or other personal data.
+      console.error("[saveSurvey] insert failed", {
+        code: insertError.code,
+        constraint: insertError.constraint ?? null,
+      });
+      throw new Error(surveySaveErrorMessage(insertError.code));
+    }
     return result;
   });
 
