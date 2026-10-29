@@ -1,18 +1,27 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowRight, CheckCircle2, LockKeyhole, Mail, MessageCircle, Sparkles } from "lucide-react";
+import { ArrowRight, AudioLines, CheckCircle2, LockKeyhole, LoaderCircle, Mail, MessageCircle, Mic, Square, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getPublicSurveyById, submitPublicIdResponse } from "@/lib/public.functions";
 import { parsePublicSurveySlug } from "@/lib/public-survey-url";
+import { formatAudioDuration, MAX_AUDIO_FILE_BYTES, MAX_AUDIO_RECORDING_SECONDS, validateAudioMetadata } from "@/lib/audio-transcription";
 
 const BR24_INSTAGRAM_URL = "https://www.instagram.com/br24io/";
 const BR24_INSTAGRAM_LABEL = "Instagram da BR24";
 
 export const Route = createFileRoute("/pesquisa/$slug")({
+  server: {
+    handlers: {
+      POST: async ({ request, params }) => {
+        const { transcribePublicSurveyAudio } = await import("@/lib/public-audio-transcription.server");
+        return transcribePublicSurveyAudio(request, params.slug);
+      },
+    },
+  },
   loader: async ({ params }) => {
     const parsed = parsePublicSurveySlug(params.slug);
     if (!parsed) return { survey: null, publicId: "", channel: "link" as const };
@@ -39,6 +48,17 @@ function PublicSurveyPage() {
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState("");
+  const [audioNotice, setAudioNotice] = useState("");
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingStartedAtRef = useRef(0);
 
   useEffect(() => {
     if (!submitted) return;
@@ -47,6 +67,176 @@ function PublicSurveyPage() {
     }, 4000);
     return () => window.clearTimeout(timer);
   }, [submitted]);
+
+  useEffect(() => {
+    if (!audioBlob) {
+      setAudioUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(audioBlob);
+    setAudioUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [audioBlob]);
+
+  useEffect(() => {
+    if (!isRecordingAudio) return;
+    const timer = window.setInterval(() => {
+      const elapsed = Math.floor((Date.now() - recordingStartedAtRef.current) / 1000);
+      setRecordingSeconds(Math.min(elapsed, MAX_AUDIO_RECORDING_SECONDS));
+      if (elapsed >= MAX_AUDIO_RECORDING_SECONDS) {
+        const recorder = mediaRecorderRef.current;
+        if (recorder?.state === "recording") recorder.stop();
+      }
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [isRecordingAudio]);
+
+  useEffect(() => () => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state === "recording") recorder.stop();
+    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
+
+  async function startAudioRecording() {
+    if (isRecordingAudio || isTranscribing || busy) return;
+    setAudioError("");
+    setAudioNotice("");
+    setAudioBlob(null);
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setAudioError("Este navegador não permite gravação de áudio. Você ainda pode escrever seu comentário normalmente.");
+      return;
+    }
+
+    let stream: MediaStream | null = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      mediaStreamRef.current = stream;
+      audioChunksRef.current = [];
+
+      const preferredMimeTypes = [
+        "audio/webm;codecs=opus",
+        "audio/mp4",
+        "audio/ogg;codecs=opus",
+        "audio/webm",
+      ];
+      const mimeType = preferredMimeTypes.find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      let recordingFailed = false;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+      recorder.onerror = () => {
+        recordingFailed = true;
+        setAudioError("A gravação foi interrompida. Verifique o microfone e tente novamente.");
+        setIsRecordingAudio(false);
+        mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      };
+      recorder.onstop = () => {
+        mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+        mediaRecorderRef.current = null;
+        const chunks = audioChunksRef.current;
+        const blob = new Blob(chunks, {
+          type: recorder.mimeType || chunks[0]?.type || "audio/webm",
+        });
+        const validationMessage = validateAudioMetadata(blob);
+        if (!recordingFailed && !validationMessage) {
+          setAudioBlob(blob);
+        } else {
+          setAudioBlob(null);
+          if (validationMessage) setAudioError(validationMessage);
+        }
+        setIsRecordingAudio(false);
+        setRecordingSeconds(Math.min(
+          MAX_AUDIO_RECORDING_SECONDS,
+          Math.round((Date.now() - recordingStartedAtRef.current) / 1000),
+        ));
+      };
+
+      recorder.start(250);
+      recordingStartedAtRef.current = Date.now();
+      setRecordingSeconds(0);
+      setIsRecordingAudio(true);
+    } catch (cause) {
+      stream?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+      setIsRecordingAudio(false);
+      if (cause instanceof DOMException && cause.name === "NotAllowedError") {
+        setAudioError("O acesso ao microfone foi bloqueado. Permita o uso do microfone nas configurações do navegador e tente novamente.");
+      } else if (cause instanceof DOMException && cause.name === "NotFoundError") {
+        setAudioError("Não encontramos um microfone disponível neste dispositivo.");
+      } else {
+        setAudioError("Não foi possível iniciar a gravação. Confira a permissão do microfone e tente novamente.");
+      }
+    }
+  }
+
+  function stopAudioRecording() {
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state === "recording") recorder.stop();
+  }
+
+  function discardAudio() {
+    setAudioBlob(null);
+    setAudioError("");
+    setAudioNotice("");
+    setRecordingSeconds(0);
+  }
+
+  async function transcribeAudio() {
+    if (!audioBlob || isTranscribing || busy) return;
+    const validationMessage = validateAudioMetadata(audioBlob);
+    if (validationMessage) {
+      setAudioError(validationMessage);
+      return;
+    }
+
+    setIsTranscribing(true);
+    setAudioError("");
+    setAudioNotice("");
+    try {
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "comentario-cliente");
+      const response = await fetch(window.location.pathname, {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin",
+      });
+      const payload = await response.json() as { text?: unknown; error?: unknown };
+      if (!response.ok) {
+        throw new Error(typeof payload.error === "string"
+          ? payload.error
+          : "Não foi possível transcrever o áudio. Tente novamente.");
+      }
+      if (typeof payload.text !== "string" || !payload.text.trim()) {
+        throw new Error("Não foi possível identificar a fala nessa gravação. Tente novamente.");
+      }
+
+      const existingComment = comment.trim();
+      const availableChars = 2000 - existingComment.length - (existingComment ? 2 : 0);
+      if (availableChars <= 0) {
+        setAudioError("O comentário já atingiu o limite de 2.000 caracteres. Reduza o texto antes de inserir a transcrição.");
+        return;
+      }
+      const transcript = payload.text.trim();
+      const textToInsert = transcript.slice(0, availableChars);
+      setComment(existingComment ? `${existingComment}\n\n${textToInsert}` : textToInsert);
+      setAudioNotice(textToInsert.length < transcript.length
+        ? "A transcrição excedeu o limite do campo e foi inserida parcialmente. Revise o texto antes de enviar."
+        : "Transcrição adicionada ao comentário. Revise o texto antes de enviar.");
+      setAudioBlob(null);
+      setRecordingSeconds(0);
+    } catch (cause) {
+      setAudioError(cause instanceof Error ? cause.message : "Não foi possível transcrever o áudio. Tente novamente.");
+    } finally {
+      setIsTranscribing(false);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -156,9 +346,47 @@ function PublicSurveyPage() {
                 <div className="mt-3 flex justify-between gap-4 text-xs text-slate-500"><span>{survey.type === "nps" ? "Nada provável" : "Muito insatisfeito"}</span><span>{survey.type === "nps" ? "Muito provável" : "Muito satisfeito"}</span></div>
               </fieldset>
 
-              <div className="space-y-2">
-                <Label htmlFor="response-comment" className="text-sm font-semibold text-slate-800">{survey.comment_prompt}</Label>
-                <Textarea id="response-comment" value={comment} maxLength={2000} onChange={(event) => setComment(event.target.value)} rows={3} placeholder="Seu comentário (opcional)" className="resize-y rounded-xl border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-sky-500" />
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="response-comment" className="text-sm font-semibold text-slate-800">{survey.comment_prompt}</Label>
+                  <Textarea id="response-comment" value={comment} maxLength={2000} onChange={(event) => { setComment(event.target.value); setAudioNotice(""); }} rows={3} placeholder="Digite seu comentário ou use o microfone abaixo" className="resize-y rounded-xl border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-sky-500" />
+                  <div className="text-right text-xs text-slate-400">{comment.length.toLocaleString("pt-BR")}/2.000 caracteres</div>
+                </div>
+
+                <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50/70 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 to-cyan-400 text-white shadow-md shadow-cyan-600/20"><AudioLines className="size-5"/></span>
+                      <div>
+                        <p className="text-sm font-semibold text-[#12315e]">Prefere falar?</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">Grave até 1 minuto e transforme sua fala em texto, sem precisar digitar.</p>
+                      </div>
+                    </div>
+                    {isRecordingAudio
+                      ? <Button type="button" variant="destructive" className="shrink-0 rounded-xl" onClick={stopAudioRecording}><Square className="mr-2 size-3.5 fill-current"/>Parar gravação</Button>
+                      : <Button type="button" variant="outline" className="shrink-0 rounded-xl border-sky-200 bg-white text-blue-800 hover:bg-sky-50" disabled={busy || isTranscribing} onClick={() => void startAudioRecording()}><Mic className="mr-2 size-4"/>Gravar áudio</Button>}
+                  </div>
+
+                  {isRecordingAudio && <div role="status" className="mt-4 flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                    <span className="flex items-center gap-2"><span className="size-2 animate-pulse rounded-full bg-rose-500"/>Gravando áudio…</span>
+                    <span className="font-mono tabular-nums">{formatAudioDuration(recordingSeconds)} / 01:00</span>
+                  </div>}
+
+                  {audioBlob && audioUrl && <div className="mt-4 space-y-3 rounded-xl border border-sky-100 bg-white p-3">
+                    <audio controls preload="metadata" src={audioUrl} className="w-full"/>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button type="button" className="flex-1 rounded-xl bg-gradient-to-r from-blue-700 via-sky-500 to-cyan-400 text-white hover:brightness-105" disabled={isTranscribing || busy} onClick={() => void transcribeAudio()}>
+                        {isTranscribing ? <LoaderCircle className="mr-2 size-4 animate-spin"/> : <Sparkles className="mr-2 size-4"/>}
+                        {isTranscribing ? "Transcrevendo áudio…" : "Transcrever para texto"}
+                      </Button>
+                      <Button type="button" variant="ghost" className="rounded-xl text-slate-600" disabled={isTranscribing} onClick={discardAudio}><Trash2 className="mr-2 size-4"/>Descartar áudio</Button>
+                    </div>
+                  </div>}
+
+                  {audioError && <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm leading-5 text-rose-800">{audioError}</p>}
+                  {audioNotice && <p role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm leading-5 text-emerald-800"><CheckCircle2 className="mt-0.5 size-4 shrink-0"/>{audioNotice}</p>}
+                  <p className="mt-3 text-[11px] leading-5 text-slate-500">O áudio é enviado ao serviço de IA somente para transcrição e não é armazenado pelo REICHCSAT. O texto transcrito será colocado no campo acima para você revisar antes de enviar a resposta.</p>
+                </div>
               </div>
 
               <details className="rounded-xl border border-sky-100 bg-white/70 p-4">
@@ -169,7 +397,7 @@ function PublicSurveyPage() {
                 </div>
               </details>
 
-              <Button type="submit" disabled={busy || score === null} className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-700 via-sky-500 to-cyan-400 font-semibold text-white shadow-lg shadow-cyan-600/20 hover:brightness-105">
+              <Button type="submit" disabled={busy || score === null || isRecordingAudio || isTranscribing || Boolean(audioBlob)} className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-700 via-sky-500 to-cyan-400 font-semibold text-white shadow-lg shadow-cyan-600/20 hover:brightness-105">
                 {busy ? "Enviando resposta..." : "Enviar resposta"} {!busy && <ArrowRight className="ml-1 size-4" />}
               </Button>
               <p className="flex items-center justify-center gap-1.5 text-center text-xs text-slate-400"><LockKeyhole className="size-3.5" /> Suas informações são usadas para registrar esta avaliação.</p>
