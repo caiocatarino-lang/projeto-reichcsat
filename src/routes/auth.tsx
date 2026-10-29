@@ -17,6 +17,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { clearBrandGlow, updateBrandGlow } from "@/lib/brand-glow";
 
 function authErrorText(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error ?? "");
@@ -299,7 +300,7 @@ function AuthPage() {
           <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full border border-cyan-300/35" />
           <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full border border-sky-300/40" />
           <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-20 h-72 w-72 rounded-full border border-blue-300/35" />
-          <div className="relative w-full max-w-[500px] rounded-[24px] border border-sky-100/90 bg-white/90 p-6 shadow-[0_18px_55px_rgba(65,137,205,0.12)] backdrop-blur-sm sm:p-8 lg:p-9">
+          <div className="brand-hover-glow relative w-full max-w-[500px] rounded-[24px] border border-sky-100/90 bg-white/90 p-6 shadow-[0_18px_55px_rgba(65,137,205,0.12)] backdrop-blur-sm sm:p-8 lg:p-9" onPointerMove={updateBrandGlow} onPointerLeave={clearBrandGlow}>
             <header className="mb-7">
               <div className="mb-5 flex items-center gap-2 lg:hidden">
                 <InfinityMark className="h-8 w-[72px]" />
