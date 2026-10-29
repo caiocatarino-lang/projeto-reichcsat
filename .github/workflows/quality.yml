@@ -25,6 +25,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
 
@@ -37,5 +42,30 @@ jobs:
       - name: Unit tests
         run: bun run test
 
-      - name: Production build
+      - name: Production build and typecheck
         run: bun run build
+
+      - name: Smoke test Node.js production server
+        env:
+          HOST: 127.0.0.1
+          PORT: 3080
+          NITRO_PORT: 3080
+        run: |
+          bun run start > /tmp/reichcsat-node.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail http://127.0.0.1:3080/ -o /tmp/reichcsat-home.html; then
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/reichcsat-node.log
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ ! -s /tmp/reichcsat-home.html ]; then
+            cat /tmp/reichcsat-node.log
+            exit 1
+          fi
+          grep -q "REICH" /tmp/reichcsat-home.html
