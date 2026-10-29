@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { clearBrandGlow, updateBrandGlow } from "@/lib/brand-glow";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -186,14 +187,14 @@ function Landing() {
                 <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-blue-700">Visão ilustrativa</span>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-sky-100 bg-gradient-to-br from-white to-sky-50/70 p-4">
+                <div className="brand-hover-glow rounded-xl border border-sky-100 bg-gradient-to-br from-white to-sky-50/70 p-4" onPointerMove={updateBrandGlow} onPointerLeave={clearBrandGlow}>
                   <div className="flex items-center gap-2 text-sm font-semibold text-[#153465]"><ChartNoAxesColumnIncreasing className="size-4 text-blue-600" /> NPS</div>
                   <p className="mt-2 text-xs leading-5 text-slate-500">Entenda a disposição de recomendação dos clientes.</p>
                   <div className="mt-4 flex h-10 items-end gap-1.5" aria-hidden="true">
                     {[35, 52, 44, 70, 61, 88, 76].map((height, i) => <span key={i} className="flex-1 rounded-t-sm bg-gradient-to-t from-blue-700 to-sky-400" style={{ height: `${height}%`, opacity: 0.5 + i * 0.07 }} />)}
                   </div>
                 </div>
-                <div className="rounded-xl border border-cyan-100 bg-gradient-to-br from-white to-cyan-50/70 p-4">
+                <div className="brand-hover-glow rounded-xl border border-cyan-100 bg-gradient-to-br from-white to-cyan-50/70 p-4" onPointerMove={updateBrandGlow} onPointerLeave={clearBrandGlow}>
                   <div className="flex items-center gap-2 text-sm font-semibold text-[#153465]"><Star className="size-4 text-cyan-600" /> CSAT</div>
                   <p className="mt-2 text-xs leading-5 text-slate-500">Acompanhe a satisfação com produtos e serviços.</p>
                   <div className="mt-4 flex h-10 items-center gap-1.5" aria-hidden="true">
@@ -212,7 +213,7 @@ function Landing() {
 
             <div id="recursos" className="mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
               {features.map(({ title, description, icon: Icon }) => (
-                <article key={title} className="rounded-xl border border-sky-100/90 bg-white/75 p-4 shadow-sm shadow-sky-100/40">
+                <article key={title} className="brand-hover-glow rounded-xl border border-sky-100/90 bg-white/75 p-4 shadow-sm shadow-sky-100/40" onPointerMove={updateBrandGlow} onPointerLeave={clearBrandGlow}>
                   <Icon className="mb-3 size-5 text-blue-600" aria-hidden="true" />
                   <h3 className="text-sm font-semibold text-[#102b54]">{title}</h3>
                   <p className="mt-2 text-xs leading-5 text-slate-600">{description}</p>
