@@ -13,7 +13,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,7 +178,7 @@ function AuthPage() {
       const url = import.meta.env["VITE_SUPABASE_URL"] || runtimeEnv?.["SUPABASE_URL"];
       const key = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || runtimeEnv?.["SUPABASE_PUBLISHABLE_KEY"];
       if (!url || !key) {
-        setDiagnostic("A URL ou a chave pública do Supabase não está configurada neste ambiente. Conecte o backend no Lovable.");
+        setDiagnostic("A URL ou a chave pública do Supabase não está configurada neste ambiente. Configure as variáveis públicas do Supabase neste ambiente.");
         return;
       }
       let baseUrl = url;
@@ -203,10 +202,15 @@ function AuthPage() {
 
   async function google() {
     setAuthError(null);
+    setDiagnostic(null);
+    setBusy(true);
     try {
-      const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-      if (r.error) {
-        const message = authErrorText(r.error);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + "/dashboard" },
+      });
+      if (error) {
+        const message = authErrorText(error);
         setAuthError(message);
         toast.error(message);
       }
@@ -214,6 +218,8 @@ function AuthPage() {
       const message = authErrorText(error);
       setAuthError(message);
       toast.error(message);
+    } finally {
+      setBusy(false);
     }
   }
 
