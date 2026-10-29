@@ -98,7 +98,7 @@ export const getCases = createServerFn({ method: 'GET' }).middleware([requireSup
   if (data.status) query = query.eq('status',data.status);
   const { data: rows,error,count } = await query.order('created_at',{ascending:false}).order('id').range(b.from,b.to);
   if (error) throw new Error('Não foi possível carregar as tratativas.');
-  return { rows: rows ?? [], count: count ?? 0 };
+  return { rows: rows ?? [], count: count ?? 0, aiAvailable: Boolean(process.env['OPENAI_API_KEY']) };
 });
 export const saveCase = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d) => caseSchema.parse(d)).handler(async ({data,context}) => {
   const {org_id} = await currentOrganization(context.supabase,context.userId);
