@@ -7,7 +7,7 @@ export const getWorkspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data: membership, error: membershipError } = await context.supabase.from("memberships")
-      .select("org_id,role,organizations(name)").eq("user_id", context.userId).order("created_at").limit(1).single();
+      .select("org_id,role,organizations(name)").eq("user_id", context.userId).order("created_at").order("id").limit(1).single();
     if (membershipError || !membership) throw new Error("Não foi possível carregar sua organização.");
     const orgId = membership.org_id;
     // Page through tables to avoid the Data API's default 1,000-row cap.
@@ -43,7 +43,7 @@ export const saveSurvey = createServerFn({ method: "POST" })
   .inputValidator((input) => surveySchema.parse(input))
   .handler(async ({ context, data }) => {
     const { data: membership, error } = await context.supabase.from("memberships").select("org_id,role")
-      .eq("user_id", context.userId).order("created_at").limit(1).single();
+      .eq("user_id", context.userId).order("created_at").order("id").limit(1).single();
     if (error || !membership || !canManageSurveys(membership.role)) throw new Error("Sem permissão para alterar pesquisas.");
     const { id, ...fields } = data;
     const payload = { ...fields, service_type: fields.service_type || null, updated_at: new Date().toISOString() };
