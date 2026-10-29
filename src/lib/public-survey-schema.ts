@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const publicSurveyTokenSchema = z.string().min(8).max(64);
+export const publicSurveyTokenSchema = z.string().min(1).max(64);
 export const publicSurveyChannelSchema = z.enum(["link", "whatsapp", "sms", "email"]);
 export type PublicSurveyChannel = z.infer<typeof publicSurveyChannelSchema>;
 
