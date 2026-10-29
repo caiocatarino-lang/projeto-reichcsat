@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - fix/auth-flow-2026-10-28
+      - portable-onnira-2026-10-29
   pull_request:
     branches:
       - main
