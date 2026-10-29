@@ -80,7 +80,6 @@ export const saveSurvey = createServerFn({ method: "POST" })
       // Never log survey content, user email, or other personal data.
       console.error("[saveSurvey] insert failed", {
         code: insertError.code,
-        constraint: insertError.constraint ?? null,
       });
       throw new Error(surveySaveErrorMessage(insertError.code));
     }
