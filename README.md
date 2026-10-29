@@ -45,6 +45,14 @@ Variáveis do runtime do servidor:
 
 O arquivo raiz `.env` versionado contém exclusivamente a URL, o identificador do projeto e a chave publicável do Supabase para que o Lovable gere o preview. Mantenha segredos privados fora dele. Use `.env.example` como modelo para novos ambientes.
 
+## Links públicos de pesquisa
+
+Os links de pesquisa usam caminhos legíveis como `/pesquisa/nome-da-pesquisa-<id-publico>`, sem parâmetros de consulta para canal. Os identificadores públicos são gerados no banco e são distintos do token legado.
+
+Para que links copiados não exibam `lovable.app`, conecte um domínio próprio ao projeto em Lovable e configure `VITE_PUBLIC_SURVEY_BASE_URL` com a URL pública final (sem barra ao final). No preview, se essa variável não estiver configurada, o app usa a origem do próprio preview.
+
+Após o envio de uma resposta pública, a página de confirmação direciona o cliente ao Instagram público da BR24. Não use URL interna de uma oportunidade do Bitrix24 como destino público, porque ela pode exigir sessão de CRM.
+
 ## Contas e banco de dados
 
 Contas de autenticação pertencem ao projeto Supabase no qual foram criadas. **Conectar outro projeto não transfere automaticamente usuários, senhas, organizações ou sessões.** Se o backend de destino for novo e estiver sem contas, usuários antigos não conseguirão entrar nele até que seja feita uma migração apropriada ou que criem uma conta nova. Não copie hashes/sessões manualmente nem altere dados de produção sem um plano de migração validado.
