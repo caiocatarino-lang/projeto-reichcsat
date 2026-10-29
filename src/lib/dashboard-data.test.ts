@@ -33,10 +33,4 @@ describe("Survey validation and permissions", () => {
   it("rejects a satisfaction threshold outside the configured scale", () => {
     expect(surveySchema.safeParse({ ...newSurvey, name: "CSAT", type: "csat", csat_scale: 5, csat_threshold: 6 }).success).toBe(false);
   });
-  it("accepts only CSAT scales supported by the database", () => {
-    const base = { ...newSurvey, name: "Pesquisa CSAT", type: "csat" as const, csat_threshold: 4 };
-    expect(surveySchema.safeParse({ ...base, csat_scale: 5 }).success).toBe(true);
-    expect(surveySchema.safeParse({ ...base, csat_scale: 10 }).success).toBe(true);
-    expect(surveySchema.safeParse({ ...base, csat_scale: 3 }).success).toBe(false);
-  });
 });

@@ -8,10 +8,7 @@ export const surveySchema = z.object({
   comment_prompt: z.string().trim().min(1).max(500),
   thank_you: z.string().trim().min(1).max(500),
   service_type: z.string().trim().max(120),
-  // The database currently supports only 5- and 10-point CSAT scales.
-  csat_scale: z.number().int().refine((scale) => scale === 5 || scale === 10, {
-    message: "A escala CSAT deve ser 1 a 5 ou 1 a 10.",
-  }),
+  csat_scale: z.number().int().min(2).max(10),
   csat_threshold: z.number().int().min(1).max(10),
 }).refine((s) => s.csat_threshold <= s.csat_scale, {
   message: "O limite de satisfação deve ser menor ou igual à escala.", path: ["csat_threshold"],

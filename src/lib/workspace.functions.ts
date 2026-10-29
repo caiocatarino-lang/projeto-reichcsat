@@ -29,7 +29,7 @@ export const getWorkspace = createServerFn({ method: "GET" })
       if (!data || data.length < 1000) break;
     }
     for (let offset = 0; ; offset += 1000) {
-      const { data, error } = await context.supabase.from("cases").select("id,response_id,status,assignee,notes,created_at,updated_at").eq("org_id", orgId)
+      const { data, error } = await context.supabase.from("cases").select("response_id,status").eq("org_id", orgId)
         .order("id").range(offset, offset + 999);
       if (error) throw new Error("Não foi possível carregar as tratativas.");
       cases.push(...(data ?? []));
@@ -76,65 +76,4 @@ export const setSurveyStatus = createServerFn({ method: "POST" })
       .update({ status: data.status, updated_at: new Date().toISOString() }).eq("id", data.id).select("id").single();
     if (error) throw new Error("Não foi possível alterar o status. Verifique sua permissão.");
     return result;
-  });
-export const updateCase = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({
-    id: z.string().uuid(),
-    status: z.enum(["open", "in_progress", "resolved"]),
-    notes: z.string().trim().max(4000),
-  }).parse(input))
-  .handler(async ({ context, data }) => {
-    const { data: membership, error: membershipError } = await context.supabase
-      .from("memberships")
-      .select("org_id")
-      .eq("user_id", context.userId)
-      .order("created_at")
-      .limit(1)
-      .single();
-
-    if (membershipError || !membership) throw new Error("Não foi possível validar sua organização.");
-
-    const { data: updated, error } = await context.supabase
-      .from("cases")
-      .update({
-        status: data.status,
-        notes: data.notes || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.id)
-      .eq("org_id", membership.org_id)
-      .select("id")
-      .single();
-
-    if (error || !updated) throw new Error("Não foi possível atualizar a tratativa. Verifique suas permissões.");
-    return updated;
-  });
-
-export const updateOrganizationName = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({
-    name: z.string().trim().min(1, "Informe o nome da organização.").max(120),
-  }).parse(input))
-  .handler(async ({ context, data }) => {
-    const { data: membership, error: membershipError } = await context.supabase
-      .from("memberships")
-      .select("org_id,role")
-      .eq("user_id", context.userId)
-      .order("created_at")
-      .limit(1)
-      .single();
-
-    if (membershipError || !membership) throw new Error("Não foi possível validar sua organização.");
-    if (membership.role !== "admin") throw new Error("Somente administradores podem alterar o nome da organização.");
-
-    const { data: updated, error } = await context.supabase
-      .from("organizations")
-      .update({ name: data.name })
-      .eq("id", membership.org_id)
-      .select("id")
-      .single();
-
-    if (error || !updated) throw new Error("Não foi possível salvar o nome da organização.");
-    return { ok: true };
   });
