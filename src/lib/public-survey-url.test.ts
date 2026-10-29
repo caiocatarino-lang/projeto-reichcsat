@@ -26,7 +26,7 @@ describe("branded public survey URL", () => {
   });
 
   it("rejects malformed or incomplete identifiers", () => {
-    expect(parsePublicSurveySlug("pesquisa-sem-publicId")).toBeNull();
-    expect(() => makePublicSurveyPath("Pesquisa", "publicId-invalido")).toThrow("Identificador público inválido");
+    expect(parsePublicSurveySlug("pesquisa-sem-identificador")).toBeNull();
+    expect(() => makePublicSurveyPath("Pesquisa", "id-invalido")).toThrow("Identificador público inválido");
   });
 });
