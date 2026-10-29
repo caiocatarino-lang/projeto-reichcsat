@@ -22,7 +22,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 
 REVOKE EXECUTE ON FUNCTION public.assign_survey_public_id() FROM PUBLIC, anon, authenticated;
 
