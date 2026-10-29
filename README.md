@@ -27,6 +27,14 @@ bun run test
 bun run build
 ```
 
+## Comentários por áudio nas pesquisas públicas
+
+Na pesquisa pública, o respondente pode gravar até 60 segundos de áudio, ouvir a gravação e solicitar a transcrição para preencher o campo de comentário. O texto é adicionado ao campo editável para revisão antes do envio. O áudio é mantido temporariamente no navegador e enviado ao endpoint do servidor para transcrição; ele não é salvo em tabelas nem em Storage do REICHCSAT.
+
+A transcrição utiliza a OpenAI Audio Transcriptions API com o modelo `gpt-transcribe`, em português. Configure `OPENAI_API_KEY` como segredo exclusivamente no ambiente do servidor/Lovable Cloud. Sem essa chave configurada, o fluxo textual da pesquisa continua disponível, mas a transcrição retorna uma mensagem informativa. O áudio é limitado a 8 MB e o endpoint aplica validações de formato, pesquisa ativa, origem da requisição e limite temporário de uso.
+
+Antes de enviar a resposta, o cliente deve revisar a transcrição porque nomes próprios, siglas e ruído podem produzir erros. A gravação só é enviada ao serviço de transcrição quando o respondente aciona o botão específico; ela não é anexada à resposta final.
+
 ## Tratativas com briefing de IA
 
 A área de Tratativas apresenta a nota e o comentário original e pode gerar um briefing estruturado de recuperação: resumo, problema principal, necessidade provável, sinais de sentimento no texto, urgência sugerida, abordagem, frase de abertura, próximos passos e pontos a evitar. O briefing é salvo em `cases.ai_briefing` e permanece vinculado à tratativa.
