@@ -268,6 +268,7 @@ export type Database = {
           id: string
           name: string
           org_id: string
+          public_id: string
           public_token: string
           question: string
           service_type: string | null
@@ -286,6 +287,7 @@ export type Database = {
           id?: string
           name: string
           org_id: string
+          public_id?: string
           public_token?: string
           question: string
           service_type?: string | null
@@ -304,6 +306,7 @@ export type Database = {
           id?: string
           name?: string
           org_id?: string
+          public_id?: string
           public_token?: string
           question?: string
           service_type?: string | null
