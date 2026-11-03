@@ -118,8 +118,6 @@ jobs:
 
   package-onnira-zip:
     runs-on: ubuntu-latest
-    needs:
-      - quality
     steps:
       - name: Checkout exact portability branch
         uses: actions/checkout@v4
