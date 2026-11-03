@@ -1,10 +1,10 @@
-name: Quality checks
+name: Quality checks and Onnira package
 
 on:
   push:
     branches:
-      - fix/auth-flow-2026-10-28
       - portable-onnira-2026-10-29
+      - fix/auth-flow-2026-10-28
   pull_request:
     branches:
       - main
@@ -13,16 +13,20 @@ permissions:
   contents: read
 
 jobs:
-  quality:
+  npm-node-validation:
     runs-on: ubuntu-latest
     env:
-      # Placeholders allow static build/tests without exposing real environment credentials.
       VITE_SUPABASE_URL: https://example.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+      VITE_SUPABASE_PROJECT_ID: ci-placeholder
+      VITE_PUBLIC_SURVEY_BASE_URL: https://example.invalid
       SUPABASE_URL: https://example.supabase.co
       SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+      HOST: 127.0.0.1
+      PORT: 3080
+      NITRO_PORT: 3080
     steps:
-      - name: Checkout repository
+      - name: Checkout portability branch
         uses: actions/checkout@v4
 
       - name: Install Node.js
@@ -30,28 +34,27 @@ jobs:
         with:
           node-version: 22.12.0
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Install npm dependencies and generate package-lock
+        run: npm install
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - name: Verify npm lockfile exists
+        run: test -s package-lock.json
+
+      - name: Reinstall exactly from npm lockfile
+        run: npm ci
 
       - name: Lint
-        run: bun run lint
+        run: npm run lint
 
       - name: Unit tests
-        run: bun run test
+        run: npm run test
 
-      - name: Production build and typecheck
-        run: bun run build
+      - name: Production build and TypeScript check
+        run: npm run build
 
       - name: Smoke test Node.js production server
-        env:
-          HOST: 127.0.0.1
-          PORT: 3080
-          NITRO_PORT: 3080
         run: |
-          bun run start > /tmp/reichcsat-node.log 2>&1 &
+          npm run start > /tmp/reichcsat-node.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do
@@ -70,58 +73,7 @@ jobs:
           fi
           grep -q "REICH" /tmp/reichcsat-home.html
 
-  onnira-node-install:
-    runs-on: ubuntu-latest
-    env:
-      VITE_SUPABASE_URL: https://example.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
-      SUPABASE_URL: https://example.supabase.co
-      SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
-      HOST: 127.0.0.1
-      PORT: 3081
-      NITRO_PORT: 3081
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.12.0
-      - name: Install dependencies as Onnira Node runtime would
-        run: npm install
-      - name: Lint
-        run: npm run lint
-      - name: Unit tests
-        run: npm run test
-      - name: Build and typecheck with npm-installed dependencies
-        run: npm run build
-      - name: Smoke test npm-installed production server
-        run: |
-          npm run start > /tmp/reichcsat-node-npm.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 30); do
-            if curl --silent --show-error --fail http://127.0.0.1:3081/ -o /tmp/reichcsat-home-npm.html; then
-              break
-            fi
-            if ! kill -0 "$server_pid" 2>/dev/null; then
-              cat /tmp/reichcsat-node-npm.log
-              exit 1
-            fi
-            sleep 1
-          done
-          if [ ! -s /tmp/reichcsat-home-npm.html ]; then
-            cat /tmp/reichcsat-node-npm.log
-            exit 1
-          fi
-          grep -q "REICH" /tmp/reichcsat-home-npm.html
-
-  package-onnira-zip:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout exact portability branch
-        uses: actions/checkout@v4
-      - name: Build clean source ZIP
+      - name: Build clean npm-based Onnira ZIP
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -133,7 +85,7 @@ jobs:
               ".cache", ".turbo", ".vite", ".tanstack", "__pycache__",
               ".pytest_cache", ".vercel",
           }
-          excluded_files = {".env"}
+          excluded_files = {".env", "bun.lock", "bunfig.toml"}
           archive = Path("REICHCSAT-ONNIRA.zip")
           included = []
 
@@ -153,20 +105,23 @@ jobs:
                   output.write(path, relative.as_posix())
                   included.append(relative.as_posix())
 
-          # Verify that the archive cannot contain environment files or build caches.
           with ZipFile(archive, "r") as check:
               names = check.namelist()
               assert "package.json" in names, "package.json is missing from ZIP root"
+              assert "package-lock.json" in names, "package-lock.json is required by Onnira"
               assert ".env.example" in names, ".env.example should be retained as a template"
+              assert "bun.lock" not in names, "Bun lockfile must not be in Onnira ZIP"
+              assert "bunfig.toml" not in names, "Bun configuration must not be in Onnira ZIP"
               assert not any(name == ".env" or name.startswith(".env.") and name != ".env.example" for name in names)
               assert not any(any(part in excluded_dirs for part in Path(name).parts) for name in names)
               assert len(names) == len(included), "ZIP verification mismatch"
           print(f"Created {archive} with {len(included)} files ({archive.stat().st_size} bytes).")
           PY
-      - name: Upload clean source package
+
+      - name: Upload npm-based Onnira ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: REICHCSAT-ONNIRA
+          name: REICHCSAT-ONNIRA-NPM
           path: REICHCSAT-ONNIRA.zip
           if-no-files-found: error
           retention-days: 7
