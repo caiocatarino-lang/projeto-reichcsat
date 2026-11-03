@@ -10,23 +10,24 @@ Esta branch remove a configuração de build exclusiva do Lovable, utiliza OAuth
 
 ## Stack e comandos
 
-Stack: React 19, TypeScript, Vite 8, TanStack Start, Nitro, Supabase, Drizzle e Bun.
+Stack: React 19, TypeScript, Vite 8, TanStack Start, Nitro, Supabase, Drizzle e npm.
 
 Runtime de produção: Node.js 22.12.0 ou superior.
 
 Instalar e executar localmente:
 
-    bun install --frozen-lockfile
-    bun run dev
+    npm install
+    npm run dev
 
 Validar:
 
-    bun run lint
-    bun run test
-    bun run typecheck
-    bun run build
+    npm run lint
+    npm run test
+    npm run typecheck
+    npm run build
+    npm run start
 
-O build gera o servidor em `.output/server/index.mjs`; o script `npm run start` inicia essa saída. O servidor lê HOST/PORT através do runtime Nitro. O arquivo `.npmrc` ativa a resolução legacy de peer dependencies para a instalação npm; a CI valida `npm install`, lint, testes, build/typecheck e inicialização Node.
+O build gera o servidor em `.output/server/index.mjs`; o script `npm run start` inicia essa saída. O pacote de publicação Onnira inclui `package-lock.json` gerado e validado pela CI. O arquivo `.npmrc` contém a configuração de resolução de peer dependencies necessária para a instalação.
 
 ## Variáveis de ambiente
 
@@ -63,4 +64,4 @@ As pesquisas usam links públicos legíveis. O cliente pode digitar um comentár
 
 ## Deploy na Onnira
 
-Siga o roteiro [ONNIRA_DEPLOY.md](./ONNIRA_DEPLOY.md). Ele descreve o ZIP, runtime Node.js, comandos, variáveis de ambiente, configuração OAuth, validação e a diferença entre mudar a hospedagem e migrar o backend.
+Siga o roteiro [ONNIRA_DEPLOY.md](./ONNIRA_DEPLOY.md). Para upload, use o artefato ZIP gerado pela CI; ele contém `package-lock.json` e não contém arquivos de lock ou configuração do Bun.
