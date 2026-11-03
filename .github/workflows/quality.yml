@@ -115,3 +115,61 @@ jobs:
             exit 1
           fi
           grep -q "REICH" /tmp/reichcsat-home-npm.html
+
+  package-onnira-zip:
+    runs-on: ubuntu-latest
+    needs:
+      - quality
+      - onnira-node-install
+    steps:
+      - name: Checkout exact portability branch
+        uses: actions/checkout@v4
+      - name: Build clean source ZIP
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZIP_DEFLATED, ZipFile
+
+          root = Path(".")
+          excluded_dirs = {
+              ".git", "node_modules", ".output", "dist", "coverage",
+              ".cache", ".turbo", ".vite", ".tanstack", "__pycache__",
+              ".pytest_cache", ".vercel",
+          }
+          excluded_files = {".env"}
+          archive = Path("REICHCSAT-ONNIRA.zip")
+          included = []
+
+          with ZipFile(archive, "w", compression=ZIP_DEFLATED, compresslevel=9) as output:
+              for path in sorted(root.rglob("*")):
+                  relative = path.relative_to(root)
+                  if any(part in excluded_dirs for part in relative.parts):
+                      continue
+                  if not path.is_file() or path == archive:
+                      continue
+                  if path.name in excluded_files:
+                      continue
+                  if path.name.startswith(".env.") and path.name != ".env.example":
+                      continue
+                  if path.name in {".DS_Store", "Thumbs.db"}:
+                      continue
+                  output.write(path, relative.as_posix())
+                  included.append(relative.as_posix())
+
+          # Verify that the archive cannot contain environment files or build caches.
+          with ZipFile(archive, "r") as check:
+              names = check.namelist()
+              assert "package.json" in names, "package.json is missing from ZIP root"
+              assert ".env.example" in names, ".env.example should be retained as a template"
+              assert not any(name == ".env" or name.startswith(".env.") and name != ".env.example" for name in names)
+              assert not any(any(part in excluded_dirs for part in Path(name).parts) for name in names)
+              assert len(names) == len(included), "ZIP verification mismatch"
+          print(f"Created {archive} with {len(included)} files ({archive.stat().st_size} bytes).")
+          PY
+      - name: Upload clean source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: REICHCSAT-ONNIRA
+          path: REICHCSAT-ONNIRA.zip
+          if-no-files-found: error
+          retention-days: 7
